@@ -31,20 +31,17 @@ export class MatrixSdkAccessService {
   }
 
   synchronize(callback: CallableFunction): Promise<any>{
-    console.log("synchronize called");
-    return this.client.once('sync', (state: any, prevState: any, res:any) =>{
-      if (state == "PREPARED") {
-        console.log("synced");
-        callback();
-
-      }
-    });
-
+    const that = this;
     return new Promise(function(resolve,reject){
-      setTimeout(function(){
-        resolve({'country' : 'INDIA'});
-      },2000)
-    });
+      that.client.once('sync', (state: any, prevState: any, res:any) =>{
+        if (state == "PREPARED") {
+          console.log("synced");
+          callback();
+          resolve({that});
+        }
+        //TODO: reject(that), if sync failed
+      });      
+    })
   }
 
   /* Room Actions */

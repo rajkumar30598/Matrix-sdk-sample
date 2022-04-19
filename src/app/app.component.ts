@@ -30,6 +30,8 @@ export class AppComponent {
   constructor(matrixSdkAccessService: MatrixSdkAccessService){
 
     this.matrixSdkAccessService = matrixSdkAccessService;
+    this.password = "5V.DujETvufY";
+    this.username = "brian.kuhn";
   }
 
   /* Matrix-SDK-Access */
