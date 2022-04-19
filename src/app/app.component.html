@@ -13,7 +13,7 @@ Trage hier deine Matrix-ID-Benutzerdaten ein<br/>
     Hier siehst du alle Rooms, die du hast:<br>
     <ul>
         <li *ngFor='let room of allRooms;'>    
-            {{room.name}}<input type="radio" [(ngModel)] ="selectedRoomId" name="selectedRoom" value={{room.id}}>
+            {{room.roomName}}<input type="radio" [(ngModel)] ="selectedRoomId" name="selectedRoom" value={{room.roomId}}>
     </ul>
 
     Du kannst jetzt Aktionen für diese Räume ausführen.<br>
@@ -34,7 +34,7 @@ Trage hier deine Matrix-ID-Benutzerdaten ein<br/>
     Hier siehst du deine Kontakte. Aktuell sind das nur alle Leute, die in den gleichen Chats wie du sind.
     <ul>
         <li *ngFor='let user of allUsers;'>    
-            {{user.name}}<input type="radio" [(ngModel)] ="selectedUserId" name="selectedUser" value={{user.id}}>
+            {{user.userName}}<input type="radio" [(ngModel)] ="selectedUserId" name="selectedUser" value={{user.userId}}>
     </ul>
     <br><br>
 

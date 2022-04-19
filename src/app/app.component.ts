@@ -1,4 +1,7 @@
 import { Component } from '@angular/core';
+import { MatrixSdkAccessService } from './messenger/matrix-sdk-access.service';
+import { MessengerRoom } from './messenger/messenger-room';
+import { MessengerUser } from './messenger/messenger-user';
 
 declare const matrixcs: any;
 
@@ -14,24 +17,39 @@ export class AppComponent {
   password: string = "secret";
   BASE_URL: string = "https://studytalk.inform.hs-hannover.de";
 
-  allRooms: {name:string, id:string}[] = [];
-  allUsers: {name:string, id:string}[] = [];
+  allRooms: MessengerRoom[] = [];
+  allUsers: MessengerUser[] = [];
   selectedRoomId: string = "";
   selectedUserId: string = "";
   enteredMsgTxt: string = "Hello World";
   afterLoginSectionHidden: boolean = true;
   newRoomName: string = "Neuer Raum";
 
-  constructor(){}
+  matrixSdkAccessService: MatrixSdkAccessService;
+
+  constructor(matrixSdkAccessService: MatrixSdkAccessService){
+
+    this.matrixSdkAccessService = matrixSdkAccessService;
+  }
 
   /* Matrix-SDK-Access */
   async onLoginBtClick(){
-    console.log("LoginBtClicked")
-    this.client = matrixcs.createClient(this.BASE_URL);
+    //console.log("LoginBtClicked")
+    //this.client = matrixcs.createClient(this.BASE_URL);
 
-    await this.client.loginWithPassword(this.username, this.password);
-    await this.client.startClient();
-    await this.client.once('sync', (this.onLoggedIn).bind(this));
+    //await this.client.loginWithPassword(this.username, this.password);
+    //await this.client.startClient();
+    //await this.client.once('sync', (this.onLoggedIn).bind(this));
+    const that = this;
+    this.matrixSdkAccessService.login(this.username, this.password, function(){
+      console.log("callback called")
+    }).then((value)=>{
+      console.log("promise called", value)
+      that.afterLoginSectionHidden = false;
+      that.updateRooms(false);
+      that.updateUsers(false);
+      that.addMessageReceiveCallback(that.onMessageArrived);
+    });
   }
 
   onCreateRoomBtClick(){
@@ -110,16 +128,7 @@ export class AppComponent {
   async updateRooms(sync:boolean){
     const that = this;
     function update(){
-      const rooms = that.client.getRooms();
-      that.allRooms = [];
-      for (let index = 0; index < rooms.length; index++) {
-          const room = rooms[index];
-          const roomName: string = room.name;
-          const roomId: string = room.roomId;
-          that.allRooms.push(
-            {name: roomName, id: roomId}
-          )
-      }
+      that.allRooms = that.matrixSdkAccessService.getAllRoomsOfLoggedInUser()
     }
     if (sync) {
       this.client.once('sync', update);
@@ -151,7 +160,7 @@ export class AppComponent {
 
       Object.keys(userNamesByIds).forEach(function(userId) {
         const username: string = userNamesByIds[userId];
-        that.allUsers.push({name: username, id:userId});
+        that.allUsers.push({userName: username, userId:userId});
       });
 
     }
