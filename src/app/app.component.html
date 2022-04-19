@@ -1,3 +1,4 @@
+
 Wilkommen beim Test des Matrix SDK<br/>
 Trage hier deine Matrix-ID-Benutzerdaten ein<br/>
 (Dabei handelt es sich um die gleichen Login-Daten, die die von Dennis für FluffChat bekommen hast)<br><br>
@@ -7,8 +8,10 @@ Trage hier deine Matrix-ID-Benutzerdaten ein<br/>
 <button (click)="onLoginBtClick()">Einloggen</button>
 
 <div [hidden]="afterLoginSectionHidden">
+    
     <h1>Der Login hat funktioniert</h1>
-
+    <h3>Hallo {{nameOfLoggedInUser}}</h3>
+    
     <h2>Deine Rooms</h2><br>
     Hier siehst du alle Rooms, die du hast:<br>
     <ul>

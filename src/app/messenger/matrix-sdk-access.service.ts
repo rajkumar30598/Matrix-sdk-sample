@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { MessengerMessage } from './messenger-message';
 import { MessengerRoom } from './messenger-room';
 import { MessengerUser } from './messenger-user';
 declare const matrixcs: any;
@@ -17,37 +18,46 @@ export class MatrixSdkAccessService {
     this.client = matrixcs.createClient(MatrixSdkAccessService.BASE_URL);
     const that = this;
 
-    return this.client.loginWithPassword(username, password).then(
-      (value: any) =>{
-        return that.client.startClient().then(
-          (value: any) =>{
-            return that.synchronize(callback);
-          },
-          (error: any) =>{
-            return error;
-          }
-        );
-      },
-      (error: any) =>{
-        alert("Login was not successfull " + error);
-        return error;
-      }
-    );
+    return new Promise(function(resolve,reject){
+      that.client.loginWithPassword(username, password).then(
+        (loginRes: any) =>{
+          return that.client.startClient().then(
+            (startRes: any) =>{
+              return that.synchronize().then(
+                (syncRes)=>{
+                  if (syncRes.state == "PREPARED") {
+                    if (callback) {
+                      callback();
+                    }
+                    resolve(that.client);
+                  }else{
+                    reject("Sync Status was not PREPARED");
+                  }
+                }
+              );
+            },
+            (startErr: any) =>{
+              reject(startErr);
+            }
+          );
+        },
+        (loginErr: any) =>{
+          reject(loginErr);
+        }
+      );    
+    })
   }
 
-  public synchronize(callback?: CallableFunction): Promise<any>{
+  private synchronize(callback?: CallableFunction): Promise<any>{
     this.checkForValidClient();
 
     const that = this;
-    return new Promise(function(resolve,reject){
+    return new Promise(function(resolve, reject){
       that.client.once('sync', (state: any, prevState: any, res:any) =>{
-        if (state == "PREPARED") {
-          if (callback) {
-            callback();
-          }          
-          resolve({that});
+        resolve({state:state, prevState:prevState, res:res});
+        if (callback) {
+          callback();
         }
-        //TODO: reject(that), if sync failed
       });      
     })
   }
@@ -125,14 +135,26 @@ export class MatrixSdkAccessService {
 
     const that = this;
 
-    return new Promise(function(resolve,reject){
-      that.client.leave(roomId, function(){
-        that.client.forget(roomId, true);
-        if (callback) {
-          callback();
+    return new Promise(function(resolve, reject){
+      that.client.leave(roomId).then(
+        (leaveRes: any)=>{
+          that.client.forget(roomId).then(
+            (forgetRes: any)=>{
+              console.log("roomdeleted", leaveRes, forgetRes);
+              resolve(forgetRes);
+              if(callback) {
+                callback();
+              }
+            },
+            (forgetErr: any)=>{
+              reject(forgetErr);
+            }
+          )
+        },
+        (leaveErr: any)=>{
+          reject(leaveErr);
         }
-        resolve(roomId);
-      });     
+      )  
     })
   }
 
@@ -148,7 +170,7 @@ export class MatrixSdkAccessService {
   public getAllMembersOfRoomsOfLoggedInUser(): MessengerUser[]{
     this.checkForValidClient();
 
-    const rooms: any[] = this.client.getAllRoomsOfLoggedInUser();
+    const rooms: any[] = this.client.getRooms();
     let allUsers: MessengerUser[] = [];
     let userNamesByIds: {[key: string]: string} = {};
 
@@ -189,10 +211,10 @@ export class MatrixSdkAccessService {
 
   public registerOnMessageListener(onMessageArrived: CallableFunction): void{
     this.checkForValidClient();
-    
+
     this.client.on("Room.timeline", function(event:any, room:any, toStartOfTimeline:any) {
       if (event.getType() == "m.room.message" && event.getContent().body != "") {
-          const message: string = event.getContent().body;
+          const messageText: string = event.getContent().body;
           const roomName: string = room.name;
           const roomId: string = event.getRoomId();
 
@@ -200,11 +222,12 @@ export class MatrixSdkAccessService {
           const senderName: string = sender.name;
           const senderId: string = sender.userId;
 
-          onMessageArrived(
-            {userName: senderName, userId: senderId},
-            {roomName: roomName, roomId: roomId},
-            message
-          );
+          const message: MessengerMessage = {
+            sender: {userName: senderName, userId: senderId},
+            room: {roomName: roomName, roomId: roomId},
+            content: messageText, date: new Date()
+          }
+          onMessageArrived(message);
         }
     });
   }

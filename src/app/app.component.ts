@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { MatrixSdkAccessService } from './messenger/matrix-sdk-access.service';
+import { MessengerMessage } from './messenger/messenger-message';
 import { MessengerRoom } from './messenger/messenger-room';
 import { MessengerUser } from './messenger/messenger-user';
 
@@ -12,40 +13,43 @@ declare const matrixcs: any;
 })
 export class AppComponent {
   title = 'matrix-js-sdk-test';
-  client: any;
+ 
+  nameOfLoggedInUser = "Max";
   username: string = "max.muster";
   password: string = "secret";
-  BASE_URL: string = "https://studytalk.inform.hs-hannover.de";
+  
+  newRoomName: string = "Neuer Raum";
 
   allRooms: MessengerRoom[] = [];
   allUsers: MessengerUser[] = [];
   selectedRoomId: string = "";
   selectedUserId: string = "";
+
   enteredMsgTxt: string = "Hello World";
   afterLoginSectionHidden: boolean = true;
-  newRoomName: string = "Neuer Raum";
-
-  matrixSdkAccessService: MatrixSdkAccessService;
+ 
+  _matrixSdkAccessService: MatrixSdkAccessService;
 
   constructor(matrixSdkAccessService: MatrixSdkAccessService){
 
-    this.matrixSdkAccessService = matrixSdkAccessService;
+    this._matrixSdkAccessService = matrixSdkAccessService;
 
   }
 
   async onLoginBtClick(){
-    this.matrixSdkAccessService.login(this.username, this.password)
+    this._matrixSdkAccessService.login(this.username, this.password)
     .then((value)=>{
       this.afterLoginSectionHidden = false;
-      this.updateRooms(false);
-      this.updateUsers(false);
-      this.matrixSdkAccessService.registerOnMessageListener(this.onMessageArrived);
+      this.nameOfLoggedInUser = this._matrixSdkAccessService.getLoggedInUser().userName;
+      this.updateRooms();
+      this.updateUsers();
+      this._matrixSdkAccessService.registerOnMessageListener(this.onMessageArrived);
     });
   }
 
   onCreateRoomBtClick(){
     const that = this;
-    this.matrixSdkAccessService.createRoom(this.newRoomName, "Testraum").then(
+    this._matrixSdkAccessService.createRoom(this.newRoomName, "Testraum").then(
       (res) => {
         that.updateRooms();
       }
@@ -53,53 +57,33 @@ export class AppComponent {
   }
 
   onSendMessageToRoomBtClick(){
-    this.matrixSdkAccessService.sendMessageToRoom(this.selectedRoomId, this.enteredMsgTxt);
+    this._matrixSdkAccessService.sendMessageToRoom(this.selectedRoomId, this.enteredMsgTxt);
   }
 
   onDeleteRoomBtClick(){
-    this.matrixSdkAccessService.deleteRoom(this.selectedRoomId);
+    const that = this;
+    this._matrixSdkAccessService.deleteRoom(this.selectedRoomId).then(
+      (res)=>{
+        that.updateRooms();
+      }
+    );
   }
 
   onInviteToRoomBtClick(){
-    this.matrixSdkAccessService.inviteUserToRoom(this.selectedUserId, this.selectedRoomId);
-  }
-
-  onLoggedIn(state:any, prevState:any, res:any){
-    if (state == "PREPARED") {
-      this.afterLoginSectionHidden = false;
-      this.updateRooms(false);
-      this.updateUsers(false);
-      //TODO: this.addMessageReceiveCallback(this.onMessageArrived);
-    }
+    this._matrixSdkAccessService.inviteUserToRoom(this.selectedUserId, this.selectedRoomId);
   }
 
   /* UI */
 
-  async updateRooms(sync?:boolean){
-    if (sync) {
-      this.matrixSdkAccessService.synchronize().then(
-        (res)=>{
-          this.allRooms = this.matrixSdkAccessService.getAllRoomsOfLoggedInUser();
-        }
-      )
-    }else{
-      this.allRooms = this.matrixSdkAccessService.getAllRoomsOfLoggedInUser();
-    }
+  updateRooms(){
+    this.allRooms = this._matrixSdkAccessService.getAllRoomsOfLoggedInUser();
   }
 
-  updateUsers(sync: boolean){
-    if (sync) {
-      this.matrixSdkAccessService.synchronize().then(
-        (res)=>{
-          this.allUsers = this.matrixSdkAccessService.getAllMembersOfRoomsOfLoggedInUser();
-        }
-      )
-    }else{
-      this.allUsers = this.matrixSdkAccessService.getAllMembersOfRoomsOfLoggedInUser();
-    }
+  updateUsers(){
+    this.allUsers = this._matrixSdkAccessService.getAllMembersOfRoomsOfLoggedInUser();
   }
 
-  onMessageArrived(message:string, sender:MessengerUser, room:MessengerRoom){
-      alert(sender.userName + " hat eine Nachricht in " + room.roomName + " gesendet: " + message);
+  onMessageArrived(message:MessengerMessage){
+      alert(message.sender.userName + " hat eine Nachricht in " + message.room.roomName + " gesendet: " + message.content);
   }
 }
