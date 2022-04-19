@@ -29,7 +29,8 @@
             "styles": [
               "src/styles.css"
             ],
-            "scripts": []
+            "scripts": [
+              "node_modules/matrix-js-sdk/dist/browser-matrix.js"]
           },
           "configurations": {
             "production": {
@@ -96,7 +97,8 @@
             "styles": [
               "src/styles.css"
             ],
-            "scripts": []
+            "scripts": [
+              "node_modules/matrix-js-sdk/dist/browser-matrix.js"]
           }
         }
       }
