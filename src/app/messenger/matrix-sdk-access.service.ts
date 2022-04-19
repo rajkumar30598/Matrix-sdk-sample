@@ -167,6 +167,23 @@ export class MatrixSdkAccessService {
     return {userName: name, userId: this.client.userName};
   }
 
+  public getAllMembersOfRoom(roomId: String){
+    this.checkForValidClient();
+
+    const members: MessengerUser[] = [];
+
+    const room: any = this.client.getRoom(roomId);
+    const users: any[] = room.getJoinedMembers();
+
+    for (let i = 0; i < users.length; i++) {
+      const user = users[i];
+      const userName: string = user.name;
+      const userId: string = user.userId;
+      members.push({userId: userId, userName: userName});
+    }
+    return members;
+  }
+
   public getAllMembersOfRoomsOfLoggedInUser(): MessengerUser[]{
     this.checkForValidClient();
 
@@ -222,14 +239,47 @@ export class MatrixSdkAccessService {
           const senderName: string = sender.name;
           const senderId: string = sender.userId;
 
+          const date: Date = new Date(event.localTimestamp);
+
           const message: MessengerMessage = {
             sender: {userName: senderName, userId: senderId},
             room: {roomName: roomName, roomId: roomId},
-            content: messageText, date: new Date()
+            content: messageText, date: date
           }
           onMessageArrived(message);
         }
     });
+  }
+
+  public getAllMessagesFromRoom(roomId: string): MessengerMessage[]{
+    this.checkForValidClient();
+
+    const allMessages: MessengerMessage[] = [];
+    const room: any = this.client.getRoom(roomId);
+    room.timeline.forEach((event: any) => {
+        if(event.getType() == "m.room.message" && event.getContent().body != ""){          
+          const room = this.client.getRoom(event.getRoomId());
+          const sender: any = room.getMember(event.getSender());
+
+          const roomId: string = room.roomId;
+          const roomName: string = room.name;
+
+          const senderId: string = sender.userId;
+          const senderName: string = sender.name;
+
+          const content: string = event.getContent().body;
+
+          const date: Date = new Date(event.localTimestamp);
+
+          const message: MessengerMessage = {
+            sender: {userId: senderId, userName: senderName},
+            room: {roomId: roomId, roomName: roomName},
+            content: content, date: date
+          }
+          allMessages.push(message);
+        }        
+    });
+    return allMessages;
   }
 
 

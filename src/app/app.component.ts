@@ -22,6 +22,7 @@ export class AppComponent {
 
   allRooms: MessengerRoom[] = [];
   allUsers: MessengerUser[] = [];
+  allMessagesInSelectedRoom: MessengerMessage[] = [];
   selectedRoomId: string = "";
   selectedUserId: string = "";
 
@@ -44,6 +45,7 @@ export class AppComponent {
       this.updateRooms();
       this.updateUsers();
       this._matrixSdkAccessService.registerOnMessageListener(this.onMessageArrived);
+      
     });
   }
 
@@ -58,6 +60,10 @@ export class AppComponent {
 
   onSendMessageToRoomBtClick(){
     this._matrixSdkAccessService.sendMessageToRoom(this.selectedRoomId, this.enteredMsgTxt);
+  }
+
+  onShowMessagesOfRoomBtClick(){
+    this.allMessagesInSelectedRoom = this._matrixSdkAccessService.getAllMessagesFromRoom(this.selectedRoomId);
   }
 
   onDeleteRoomBtClick(){

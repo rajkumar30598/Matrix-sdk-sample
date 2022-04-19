@@ -19,6 +19,13 @@ Trage hier deine Matrix-ID-Benutzerdaten ein<br/>
             {{room.roomName}}<input type="radio" [(ngModel)] ="selectedRoomId" name="selectedRoom" value={{room.roomId}}>
     </ul>
 
+    <h3>Nachrichten in dem ausgew&auml;hlten Raum:</h3>
+    <button (click)="onShowMessagesOfRoomBtClick()">Nachrichten aktualisieren</button><br><br>
+    <ul>
+        <li *ngFor='let msg of allMessagesInSelectedRoom;'>    
+            {{msg.sender.userName}} : {{msg.content}} um {{msg.date}}
+    </ul>
+
     Du kannst jetzt Aktionen für diese Räume ausführen.<br>
     Nachdem du eine Aktion ausgeführt hast, kannst du in Element oder FluffyChat nachschauen, ob es auch wirklich funktioniert hat.<br>
 
