@@ -12,7 +12,6 @@ export class MatrixSdkAccessService {
 
   client: any;
   static BASE_URL: string = "https://studytalk.inform.hs-hannover.de";
-  constructor() { }
 
   /* General Actions */
 
@@ -280,9 +279,9 @@ export class MatrixSdkAccessService {
   public getLoggedInUser(): MessengerUser{
     this.checkForValidClient();
 
-    const userId: string = this.client.userId;
-    const displayName: string= "My Name"; //TODO: Get the displayName of the currently logged in user correctly
-
+    const userId: string = this.client.getUserId();
+    const displayName: string= this.client.getUser(this.client.getUserId()).displayName;
+    console.log()
     return {
       userDisplayName: displayName,
       userId: userId
