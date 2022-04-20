@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { MatrixSdkAccessService } from './messenger/matrix-sdk-access.service';
+import { MessengerDirectChat } from './messenger/messenger-direct-chat';
 import { MessengerMessage } from './messenger/messenger-message';
 import { MessengerRoom } from './messenger/messenger-room';
 import { MessengerUser } from './messenger/messenger-user';
@@ -15,18 +16,21 @@ export class AppComponent {
   title = 'matrix-js-sdk-test';
  
   nameOfLoggedInUser = "Max";
-  username: string = "max.muster";
-  password: string = "secret";
+  username: string = "brian.kuhn";
+  password: string = "5V.DujETvufY";
   
   newRoomName: string = "Neuer Raum";
 
   allRooms: MessengerRoom[] = [];
   allUsers: MessengerUser[] = [];
+  allDms: MessengerDirectChat[] = [];
+
   allMessagesInSelectedRoom: MessengerMessage[] = [];
   selectedRoomId: string = "";
   selectedUserId: string = "";
 
   enteredMsgTxt: string = "Hello World";
+  enteredDirectMsgTxt: string = "Hello World";
   afterLoginSectionHidden: boolean = true;
  
   _matrixSdkAccessService: MatrixSdkAccessService;
@@ -41,9 +45,10 @@ export class AppComponent {
     this._matrixSdkAccessService.login(this.username, this.password)
     .then((value)=>{
       this.afterLoginSectionHidden = false;
-      this.nameOfLoggedInUser = this._matrixSdkAccessService.getLoggedInUser().userName;
+      this.nameOfLoggedInUser = this._matrixSdkAccessService.getLoggedInUser().userDisplayName;
       this.updateRooms();
       this.updateUsers();
+      this.updateDms();
       this._matrixSdkAccessService.registerOnMessageListener(this.onMessageArrived);
       
     });
@@ -79,6 +84,9 @@ export class AppComponent {
     this._matrixSdkAccessService.inviteUserToRoom(this.selectedUserId, this.selectedRoomId);
   }
 
+  onSendDirectMessageBtClick(){
+    this._matrixSdkAccessService.sendDM(this.selectedUserId, this.enteredDirectMsgTxt);
+  }
   /* UI */
 
   updateRooms(){
@@ -89,7 +97,11 @@ export class AppComponent {
     this.allUsers = this._matrixSdkAccessService.getAllMembersOfRoomsOfLoggedInUser();
   }
 
+  updateDms(){
+    this.allDms = this._matrixSdkAccessService.getAllDmsOfLoggedInUser();
+  }
+
   onMessageArrived(message:MessengerMessage){
-      alert(message.sender.userName + " hat eine Nachricht in " + message.room.roomName + " gesendet: " + message.content);
+      alert(message.sender.userDisplayName + " hat eine Nachricht in " + message.room.roomDisplayName + " gesendet: " + message.content);
   }
 }

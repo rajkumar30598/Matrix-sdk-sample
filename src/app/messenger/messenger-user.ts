@@ -1,4 +1,4 @@
 export interface MessengerUser {
-    userName: string;
+    userDisplayName: string;
     userId: string;
 }

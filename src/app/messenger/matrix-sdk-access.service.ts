@@ -1,4 +1,5 @@
-import { Injectable } from '@angular/core';
+import { Injectable} from '@angular/core';
+import { MessengerDirectChat } from './messenger-direct-chat';
 import { MessengerMessage } from './messenger-message';
 import { MessengerRoom } from './messenger-room';
 import { MessengerUser } from './messenger-user';
@@ -30,6 +31,7 @@ export class MatrixSdkAccessService {
                       callback();
                     }
                     resolve(that.client);
+                    that.getAllDmsOfLoggedInUser();
                   }else{
                     reject("Sync Status was not PREPARED");
                   }
@@ -46,6 +48,10 @@ export class MatrixSdkAccessService {
         }
       );    
     })
+  }
+
+  public register(username: string, password: string, callback?:CallableFunction){
+    //TODO: Implement
   }
 
   private synchronize(callback?: CallableFunction): Promise<any>{
@@ -80,7 +86,7 @@ export class MatrixSdkAccessService {
         const roomName: string = room.name;
         const roomId: string = room.roomId;
         allRooms.push(
-          {roomName: roomName, roomId: roomId}
+          {roomDisplayName: roomName, roomId: roomId}
         )
     }
     return allRooms;
@@ -140,7 +146,6 @@ export class MatrixSdkAccessService {
         (leaveRes: any)=>{
           that.client.forget(roomId).then(
             (forgetRes: any)=>{
-              console.log("roomdeleted", leaveRes, forgetRes);
               resolve(forgetRes);
               if(callback) {
                 callback();
@@ -158,16 +163,20 @@ export class MatrixSdkAccessService {
     })
   }
 
-  /* Member Actions */
+  /* User Actions */
 
   public getLoggedInUser(): MessengerUser{
     this.checkForValidClient();
 
+    console.log("Client-Object", this.client);
+    console.log("USER-Object", this.client.userId);
+    console.log("USER-Object", this.client.getUser(this.client.userId));
+    //console.log("USER-Name", matrixcs.getMyUser());
     const name = "My Name"//TODO: Get this correctly
-    return {userName: name, userId: this.client.userName};
+    return {userDisplayName: name, userId: this.client.userName};
   }
 
-  public getAllMembersOfRoom(roomId: String){
+  public getAllMembersOfRoom(roomId: String): MessengerUser[]{
     this.checkForValidClient();
 
     const members: MessengerUser[] = [];
@@ -179,7 +188,7 @@ export class MatrixSdkAccessService {
       const user = users[i];
       const userName: string = user.name;
       const userId: string = user.userId;
-      members.push({userId: userId, userName: userName});
+      members.push({userId: userId, userDisplayName: userName});
     }
     return members;
   }
@@ -194,6 +203,7 @@ export class MatrixSdkAccessService {
     //Collecting users in dictionary for eliminating duplicates
     for (let index = 0; index < rooms.length; index++) {
       const room = rooms[index];
+      room.loadMembersIfNeeded()
       const users = room.getJoinedMembers();
       for (let j = 0; j < users.length; j++) {
           const user = users[j];
@@ -206,10 +216,135 @@ export class MatrixSdkAccessService {
     //Pushing Users from dictionary into list
     Object.keys(userNamesByIds).forEach(function(userId) {
       const username: string = userNamesByIds[userId];
-      allUsers.push({userName: username, userId:userId});
+      allUsers.push({userDisplayName: username, userId:userId});
     });
 
     return allUsers;
+  }
+
+  public getAllDmsOfLoggedInUser(): MessengerDirectChat[]{
+    const directChats: MessengerDirectChat[] = [];
+
+    const dms: any = this.client
+      .getAccountData('m.direct')
+      ?.getContent();
+
+    if (typeof dms === 'undefined'){
+      return directChats;
+    } 
+
+    Object.keys(dms).forEach((userId: string) => {
+      dms[userId].forEach((roomId: string) => {
+
+        const room: any = this.client.getRoom(roomId);
+        if (room) {
+          directChats.push({
+            user: {userId: userId, userDisplayName: room.getMember(userId).name},
+            room: {roomDisplayName:room.name, roomId: roomId}
+          });
+        }
+      });
+    });
+    return directChats;
+  }
+
+  public createDM(userId: string, callback?:CallableFunction):Promise<MessengerDirectChat> {
+    const options = {
+      is_direct: true,
+      invite: [userId],
+      visibility: 'private',
+      preset: 'trusted_private_chat',
+      initial_state: [],
+    };
+    const that = this;
+  
+    return new Promise(function(resolve, reject){
+      that.client.createRoom(options).then(
+        (createRoomRes:any)=>{
+          const roomId: string = createRoomRes.room_id;
+
+ 
+
+          const directsEvent = that.client.getAccountData('m.direct');
+          let userIdToRoomIds: { [key:string] : [value:string] } = {};
+          if (typeof directsEvent !== 'undefined'){
+            userIdToRoomIds = directsEvent.getContent();
+          }
+        
+          // remove it from the lists of any others users
+          // (it can only be a DM room for one person)
+          Object.keys(userIdToRoomIds).forEach((thisUserId) => {
+            const roomIds = userIdToRoomIds[thisUserId];
+            if (thisUserId !== userId) {
+              const indexOfRoomId = roomIds.indexOf(roomId);
+              if (indexOfRoomId > -1) {
+                roomIds.splice(indexOfRoomId, 1);
+              }
+            }
+          });
+        
+          // now add it, if it's not already there
+          const roomIds = userIdToRoomIds[userId] || [];
+          if (roomIds.indexOf(roomId) === -1) {
+            roomIds.push(roomId);
+          }
+          userIdToRoomIds[userId] = roomIds;
+
+          that.client.setAccountData('m.direct', userIdToRoomIds).then(
+            (setAccRes: any) =>{
+
+              const room: any = that.client.getRoom(roomId);
+
+              const directChat: MessengerDirectChat = {
+                room:{
+                  roomId: roomId,
+                  roomDisplayName: room.name},
+                user:{
+                  userId: userId,
+                  userDisplayName: room.getMember(userId).name
+                }
+              };
+              console.log("DirectChat", directChat);
+
+              resolve(directChat);
+              if (callback) {
+                callback()
+              }
+            },
+            (setAccErr: any) =>{
+              reject(setAccErr);
+            }
+          )
+        },
+        (createRoomErr:any)=>{
+          reject(createRoomErr);
+        }
+      )
+    })
+
+  }
+
+  public sendDM(userId: string, message:string){
+    const allDms: MessengerDirectChat[] = this.getAllDmsOfLoggedInUser();
+
+    for (let index = 0; index < allDms.length; index++) {
+      const dm = allDms[index];
+      if (dm.user.userId == userId) {
+        this.sendMessageToRoom(dm.room.roomId, message);
+        return;
+      }
+    }
+
+    this.createDM(userId).then(
+      (res:any)=>{
+        this.sendMessageToRoom(res.room.roomId, message);
+      },
+      (err:any)=>{
+        throw new Error("An Error occured while creating the new DM");
+        
+      }
+    )
+
   }
 
   /* Message Actions */
@@ -231,19 +366,24 @@ export class MatrixSdkAccessService {
 
     this.client.on("Room.timeline", function(event:any, room:any, toStartOfTimeline:any) {
       if (event.getType() == "m.room.message" && event.getContent().body != "") {
-          const messageText: string = event.getContent().body;
-          const roomName: string = room.name;
-          const roomId: string = event.getRoomId();
 
           const sender: any = room.getMember(event.getSender());
           const senderName: string = sender.name;
           const senderId: string = sender.userId;
 
+          if (room.myUserId == senderId) {
+            return;
+          }
+
+          const messageText: string = event.getContent().body;
+          const roomName: string = room.name;
+          const roomId: string = event.getRoomId();
+
           const date: Date = new Date(event.localTimestamp);
 
           const message: MessengerMessage = {
-            sender: {userName: senderName, userId: senderId},
-            room: {roomName: roomName, roomId: roomId},
+            sender: {userDisplayName: senderName, userId: senderId},
+            room: {roomDisplayName: roomName, roomId: roomId},
             content: messageText, date: date
           }
           onMessageArrived(message);
@@ -272,8 +412,8 @@ export class MatrixSdkAccessService {
           const date: Date = new Date(event.localTimestamp);
 
           const message: MessengerMessage = {
-            sender: {userId: senderId, userName: senderName},
-            room: {roomId: roomId, roomName: roomName},
+            sender: {userId: senderId, userDisplayName: senderName},
+            room: {roomId: roomId, roomDisplayName: roomName},
             content: content, date: date
           }
           allMessages.push(message);

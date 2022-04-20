@@ -1,10 +1,10 @@
 
 Wilkommen beim Test des Matrix SDK<br/>
 Trage hier deine Matrix-ID-Benutzerdaten ein<br/>
-(Dabei handelt es sich um die gleichen Login-Daten, die die von Dennis für FluffChat bekommen hast)<br><br>
+(Dabei handelt es sich um die gleichen Login-Daten, die du von Dennis für FluffChat bekommen hast)<br><br>
 <label>Benutzername:</label><input required type="text" [(ngModel)]="username"/>
-<br>
-<label>Passwort:</label><input required type="password" [(ngModel)]="password"/>
+<br><br>
+<label>Passwort:</label><input required type="password" [(ngModel)]="password"/><br><br>
 <button (click)="onLoginBtClick()">Einloggen</button>
 
 <div [hidden]="afterLoginSectionHidden">
@@ -13,42 +13,53 @@ Trage hier deine Matrix-ID-Benutzerdaten ein<br/>
     <h3>Hallo {{nameOfLoggedInUser}}</h3>
     
     <h2>Deine Rooms</h2><br>
-    Hier siehst du alle Rooms, die du hast:<br>
+    Hier siehst du alle Rooms, die du hast:
     <ul>
         <li *ngFor='let room of allRooms;'>    
-            {{room.roomName}}<input type="radio" [(ngModel)] ="selectedRoomId" name="selectedRoom" value={{room.roomId}}>
+            {{room.roomDisplayName}}<input type="radio" [(ngModel)] ="selectedRoomId" name="selectedRoom" value={{room.roomId}}>
     </ul>
 
     <h3>Nachrichten in dem ausgew&auml;hlten Raum:</h3>
-    <button (click)="onShowMessagesOfRoomBtClick()">Nachrichten aktualisieren</button><br><br>
+    <button (click)="onShowMessagesOfRoomBtClick()">Nachrichten aktualisieren</button>
     <ul>
         <li *ngFor='let msg of allMessagesInSelectedRoom;'>    
-            {{msg.sender.userName}} : {{msg.content}} um {{msg.date}}
+            {{msg.sender.userDisplayName}} : {{msg.content}} um {{msg.date}}
     </ul>
 
     Du kannst jetzt Aktionen für diese Räume ausführen.<br>
-    Nachdem du eine Aktion ausgeführt hast, kannst du in Element oder FluffyChat nachschauen, ob es auch wirklich funktioniert hat.<br>
+    Nachdem du eine Aktion ausgeführt hast, kannst du in Element oder FluffyChat nachschauen, ob es auch wirklich funktioniert hat.
 
-    <h3>Sende eine Nachricht an den ausgewählten Room (klappt bisher nur bei unverschlüsselten Räumen)</h3><br>
-    <label>Text der Nachricht</label><input type="text" [(ngModel)]="enteredMsgTxt"><br>
-    <button (click)="onSendMessageToRoomBtClick()">senden</button><br><br>
+    <h3>Sende eine Nachricht an den ausgewählten Room (klappt bisher nur bei unverschlüsselten Räumen)</h3>
+    <label>Text der Nachricht</label><input type="text" [(ngModel)]="enteredMsgTxt">
+    <button (click)="onSendMessageToRoomBtClick()">senden</button>
 
     <h3>Erstelle einen (unverschlüsselten) Room</h3>
-    <label>Name des Rooms</label><input type="text" [(ngModel)]="newRoomName"><br>
-    <button (click)="onCreateRoomBtClick()">Room erstellen</button><br><br>
+    <label>Name des Rooms</label><input type="text" [(ngModel)]="newRoomName">
+    <button (click)="onCreateRoomBtClick()">Room erstellen</button>
 
-    <h3>Lösche den ausgewählte Room</h3><br>
-    <button (click)="onDeleteRoomBtClick()">Room löschen</button><br><br>
-    
+    <h3>Lösche den ausgewählte Room</h3>
+    <button (click)="onDeleteRoomBtClick()">Room löschen</button>
+
     <h2>Deine Kontakte</h2>
     Hier siehst du deine Kontakte. Aktuell sind das nur alle Leute, die in den gleichen Chats wie du sind.
     <ul>
         <li *ngFor='let user of allUsers;'>    
-            {{user.userName}}<input type="radio" [(ngModel)] ="selectedUserId" name="selectedUser" value={{user.userId}}>
+            {{user.userDisplayName}}<input type="radio" [(ngModel)] ="selectedUserId" name="selectedUser" value={{user.userId}}>
     </ul>
-    <br><br>
 
     <h2>Ausgewählten Kontakt in ausgewählten Raum einladen</h2>
     <button (click)="onInviteToRoomBtClick()">Einladen</button>
+
+    <h2>Deine DMs</h2>
+    Hier siehst du deine Direktchats mit Personen.
+    <ul>
+        <li *ngFor='let dm of allDms;'>    
+            {{dm.user.userDisplayName}}
+    </ul>
+
+    <h3>Sende eine Nachricht an den ausgewählten Kontakt (klappt bisher nur unverschlüsselt</h3>
+    <label>Text der Nachricht</label><input type="text" [(ngModel)]="enteredDirectMsgTxt">
+    <button (click)="onSendDirectMessageBtClick()">senden</button>
+    
 </div>
 <router-outlet></router-outlet>
