@@ -15,7 +15,20 @@ export class MatrixSdkAccessService {
   constructor() { }
 
   /* General Actions */
-  public login(username: string, password: string, callback?: CallableFunction): Promise<{}>{
+
+  /**
+   * Logs a user into his Matrix-Account by using its username and password.
+   * Must be called before all other public methods of service (except register)
+   * @param {String} username username (Matrix-ID username) of the user that is logging in
+   * @param {String} password password (Matrix-ID password) of the user that is logging in
+   * @param {CallableFunction} callback a optional function that is called after a finished login attempt. It has to take one Parameter of the type MessengerUser
+   * If the login is successfull the value of this parameter will be a MessengerUser object with the values of the currenctly logged in user
+   * If the login fails the value of this parameter will be null
+   * @returns {Promise} a promise.
+   * If the login is sucessfull the result of the promis will be a MessengerUser object with the values of the currenctly logged in user
+   * If the login fails the result of the promise will be the error message 
+   */
+  public login(username: string, password: string, callback?: (user: MessengerUser|null) => any): Promise<MessengerUser>{
     this.client = matrixcs.createClient(MatrixSdkAccessService.BASE_URL);
     const that: MatrixSdkAccessService = this;
 
@@ -27,34 +40,61 @@ export class MatrixSdkAccessService {
               return that.synchronize().then(
                 (syncRes)=>{
                   if (syncRes.state == "PREPARED") {
+                    const yourUser: MessengerUser = that.getLoggedInUser();
                     if (callback) {
-                      callback({});
+                      callback(yourUser);
                     }
-                    resolve({});
+                    resolve(yourUser);
                     that.getAllDmsOfLoggedInUser();
                   }else{
+                    if (callback) {
+                      callback(null);
+                    }
                     reject("Sync Status was not PREPARED");
                   }
                 }
               );
             },
-            (startErr: any) =>{
+            (startErr: string) =>{
+              if (callback) {
+                callback(null);
+              }
               reject(startErr);
             }
           );
         },
-        (loginErr: any) =>{
+        (loginErr: string) =>{
+          if (callback) {
+            callback(null);
+          }
           reject(loginErr);
         }
       );    
     })
   }
 
-  public register(username: string, password: string, callback?:CallableFunction){
-    //TODO: Implement a function that registers a user
+  public register(username: string, password: string, callback?:(newUser: MessengerUser|null)=>any){
+    
+    this.client = matrixcs.createClient(MatrixSdkAccessService.BASE_URL);
+    const that: MatrixSdkAccessService = this;
+    return new Promise(function(resolve,reject){
+
+      //Todo register a new user and return his MessengerUserObject
+
+      if (callback) {
+        callback(null)
+      }
+      reject("This function is not implemented yet");
+    })
   }
 
-  private synchronize(callback?: CallableFunction): Promise<{state:string, prevState:string}>{
+  /**
+   * Synchronises the matrix-client
+   * @param {(param: {state:string, prevState:string})=>any} callback an optional function that will be called after the synchronizing is finished
+   * it has to take an argument of type {state:string, prevState:string}
+   * @returns {Promise<{state:string, prevState:string}>}promise with the result of type {state:string, prevState:string}
+   */
+  private synchronize(callback?: (param: {state:string, prevState:string} ) => any ): Promise<{state:string, prevState:string}>{
     this.checkForValidClient();
     const that: MatrixSdkAccessService = this;
     return new Promise(function(resolve, reject){
@@ -72,6 +112,9 @@ export class MatrixSdkAccessService {
     })
   }
 
+  /**
+   * Checks if the client is valid and throws an error, if its not
+   */
   private checkForValidClient(): void{
     if (! this.client) {
       throw new Error("You have to login before beeing able to perform actions on the client");
@@ -79,7 +122,11 @@ export class MatrixSdkAccessService {
   }
 
   /* Room Actions */
-
+  
+  /**
+   * Returns all Rooms of the Logged in User
+   * @returns {MessengerRoom[]} a list of MessengerRoom object filled with the values of all roomes of the currently logged in user
+   */
   public getAllRoomsOfLoggedInUser(): MessengerRoom[]{
     this.checkForValidClient();
 
@@ -96,6 +143,10 @@ export class MatrixSdkAccessService {
     return allRooms;
   }
 
+  /**
+   * Returns all Rooms of the Logged in User, which dont have end-to-end-encryption enabled
+   * @returns {MessengerRoom[]} a list of MessengerRoom object filled with the values of all unencrypted roomes of the currently logged in user
+   */
   public getAllUnencryptedRoomsOfLoggedInUser(): MessengerRoom[]{
     this.checkForValidClient();
 
@@ -112,7 +163,18 @@ export class MatrixSdkAccessService {
     return unencryptedRooms;
   }
 
-  public createRoom(roomName: string, roomDescription: string, callback?: CallableFunction): Promise<MessengerRoom>{
+  /**
+   * Creates an new Room (a Group or Direct Chat)
+   * @param {string} roomName 
+   * @param {string} roomDescription 
+   * @param {(room:MessengerRoom|null)=>any} callback an optional Function that is called when the attempt of creating a room is finished. It has to take one parameter of type MessengerRoom
+   * if the room was created successfully, the parameters value will be an MessengerRoom object, which is filled with the vaules of the newly created room
+   * if the creation of the room failed the parameter will have the value null
+   * @returns {Promise<MessengerRoom>} a promise
+   * if the room was created successfully, the result of the promise will be an MessengerRoom object, which is filled with the vaules of the newly created room
+   * if the creation of the room failed the result of the promise will be the error message
+   */
+  public createRoom(roomName: string, roomDescription: string, callback?: (room:MessengerRoom|null)=>any): Promise<MessengerRoom>{
     this.checkForValidClient();
 
     const options: {topic: string, name: string} = {
@@ -137,18 +199,34 @@ export class MatrixSdkAccessService {
           
         },
         (err: any) =>{
+          if (callback) {
+            callback(null);
+          }
           reject(err);
         }
       );      
     })
   }
 
+  /**
+   * Invites an user to join a room
+   * @param {string} userId userId (matrix-user-Id) of the user that will be invited to the room
+   * @param {string} roomId roomId of the room that the user will be invited to
+   */
   public inviteUserToRoom(userId: string, roomId: string): void{
     this.checkForValidClient();
     this.client.invite(userId, roomId);
   }
 
-  public deleteRoom(roomId: string, callback?: CallableFunction): Promise<MessengerRoom>{
+  /**
+   * Deletes an room
+   * @param {string} roomId id of the room to delete
+   * @param {(deletedRoom:MessengerRoom|null)=>any} callback optional function that will be called after the finished attempt of deleting the room. It has to take one parameter of type MessengerRoom.
+   * if the room is successfully deleted the parameters value will be an MessengerRoom object filled with the values of the room that has been deleted
+   * if the room could not be deleted the parameters value will be null
+   * @returns 
+   */
+  public deleteRoom(roomId: string, callback?: (deltedRoom:MessengerRoom|null)=>any): Promise<MessengerRoom>{
     this.checkForValidClient();
 
     const that: MatrixSdkAccessService = this;
@@ -176,11 +254,17 @@ export class MatrixSdkAccessService {
               }
             },
             (forgetErr: any)=>{
+              if(callback) {
+                callback(null);
+              }
               reject(forgetErr);
             }
           )
         },
         (leaveErr: any)=>{
+          if(callback) {
+            callback(null);
+          }
           reject(leaveErr);
         }
       )  
@@ -189,13 +273,27 @@ export class MatrixSdkAccessService {
 
   /* User Actions */
 
+  /**
+   * Get the user that is currently logged in
+   * @returns {MessengerUser} a MessengerUser object filled with the values of the currently logged in user
+   */
   public getLoggedInUser(): MessengerUser{
     this.checkForValidClient();
 
-    const name: string= "My Name"//TODO: Get the displayName of the currently logged in user correctly
-    return {userDisplayName: name, userId: this.client.userName};
+    const userId: string = this.client.userId;
+    const displayName: string= "My Name"; //TODO: Get the displayName of the currently logged in user correctly
+
+    return {
+      userDisplayName: displayName,
+      userId: userId
+    };
   }
 
+  /**
+   * Gets all Members of an Room
+   * @param {String} roomId id of the room, which members sould be returned
+   * @returns {MessengerUser[]} a List of MessengerUser object filled with the values of the users in the room
+   */
   public getAllMembersOfRoom(roomId: String): MessengerUser[]{
     this.checkForValidClient();
 
@@ -213,6 +311,10 @@ export class MatrixSdkAccessService {
     return members;
   }
 
+  /**
+   * Returns all members of all rooms of the currently logged in user
+   * @returns {MessengerUser[]} a list of MessengerUser-Objects filled with the values of the users in the rooms
+   */
   public getAllMembersOfRoomsOfLoggedInUser(): MessengerUser[]{
     this.checkForValidClient();
 
@@ -244,6 +346,11 @@ export class MatrixSdkAccessService {
 
   /* Message Actions */
 
+  /**
+   * Sends a text-message into an room
+   * @param {string} roomId id of the room which should receive the message 
+   * @param {string} messageText text of the message that should be send
+   */
   public sendMessageToRoom(roomId: string, messageText: string): void{
     this.checkForValidClient();
 
@@ -256,7 +363,12 @@ export class MatrixSdkAccessService {
     );
   }
 
-  public registerOnMessageListener(onMessageArrived: CallableFunction): void{
+/**
+ * Registers a method, which is executed every time a text-message arrives
+ * @param {(msg:MessengerMessage)=>any} onMessageArrived a method that is executed every time a text-message arrives
+ * Has to take one parameter of type MessengerMessage, which will contain information about the arrived message
+ */
+  public registerOnMessageListener(onMessageArrived: (msg:MessengerMessage)=>any): void{
     this.checkForValidClient();
 
     this.client.on("Room.timeline", function(event:any, room:any, toStartOfTimeline:any) {
@@ -286,6 +398,11 @@ export class MatrixSdkAccessService {
     });
   }
 
+  /**
+   * Gets all Messages from a room
+   * @param {string} roomId id of the room
+   * @returns {MessengerMessage[]} a list of all messages that have been sent to the room
+   */
   public getAllMessagesFromRoom(roomId: string): MessengerMessage[]{
     this.checkForValidClient();
 
@@ -318,6 +435,11 @@ export class MatrixSdkAccessService {
   }
 
   /* Direct Chat Actions */
+
+  /**
+   * Gets all Direct-Chats of the logged in user
+   * @returns {MessengerDirectChat[]} a list of all the direct chat that the user has had
+   */
   public getAllDmsOfLoggedInUser(): MessengerDirectChat[]{
     this.checkForValidClient();
 
@@ -346,7 +468,18 @@ export class MatrixSdkAccessService {
     return directChats;
   }
 
-  private createDM(userId: string, callback?:CallableFunction): Promise<MessengerDirectChat> {
+  /**
+   * Creates a new direct-chat
+   * @param {string} userId user id (matrix-ID) of the user with whom a direct chat should be created
+   * @param {(directChat:MessengerDirectChat|null)=>any} callback optional method that will be called after an attempt to create a new direct chat is finished
+   * Has to take one parameter of type MessengerDirectChat
+   * If the creation of the Direct Chat was successfull the parameter will have the values of the newly created direct chat
+   * If the creation of the Direct Chat failed, parameter will be null
+   * @returns {Promise<MessengerDirectChat>} a promise
+   * If the creation of the Direct Chat was successfull the result of the promise will be an MessengerDirectChat-Object with the values of the newly created direct chat
+   * If the creation of the Direct Chat failed, the result of the promise will be the error message
+   */
+  private createDM(userId: string, callback?: (directChat:MessengerDirectChat|null)=>any): Promise<MessengerDirectChat> {
     this.checkForValidClient();
 
     const options = {
@@ -410,18 +543,29 @@ export class MatrixSdkAccessService {
             },
             (setAccErr: any) =>{
               reject(setAccErr);
+              if (callback) {
+                callback(null);
+              }
             }
           )
         },
         (createRoomErr:any)=>{
           reject(createRoomErr);
+          if (callback) {
+            callback(null);
+          }
         }
       )
     })
 
   }
 
-  public sendDM(userId: string, message:string){
+  /**
+   * Sends a direct-message to an user. Creates an new direct-chat, if necessary.
+   * @param {string} userId user id (Matrix-ID) of the receiving user
+   * @param {string} message text of the message
+   */
+  public sendDM(userId: string, message:string):void{
     this.checkForValidClient();
 
     const allDms: MessengerDirectChat[] = this.getAllDmsOfLoggedInUser();
@@ -440,12 +584,16 @@ export class MatrixSdkAccessService {
       },
       (err:any)=>{
         throw new Error("An Error occured while creating the new DM");
-        
       }
     )
 
   }
 
+  /**
+   * Gets all messages that the given user has sent with the logged in user
+   * @param {string} userId  user id (Matrix-ID) of the user whos direct-chat-messages should be returned
+   * @returns {MessengerMessage[]} a list of MessengerMessage objects with the values of the messages of the direct-chat
+   */
   public getAllMessagesFromUser(userId: string): MessengerMessage[]{
 
     const allDms: MessengerDirectChat[] = this.getAllDmsOfLoggedInUser();
