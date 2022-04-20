@@ -17,7 +17,7 @@ export class MatrixSdkAccessService {
   /* General Actions */
   public login(username: string, password: string, callback?: CallableFunction): Promise<{}>{
     this.client = matrixcs.createClient(MatrixSdkAccessService.BASE_URL);
-    const that = this;
+    const that: MatrixSdkAccessService = this;
 
     return new Promise(function(resolve,reject){
       that.client.loginWithPassword(username, password).then(
@@ -56,7 +56,7 @@ export class MatrixSdkAccessService {
 
   private synchronize(callback?: CallableFunction): Promise<{state:string, prevState:string}>{
     this.checkForValidClient();
-    const that = this;
+    const that: MatrixSdkAccessService = this;
     return new Promise(function(resolve, reject){
       that.client.once('sync', (state: any, prevState: any, res:any) =>{
 
@@ -83,7 +83,7 @@ export class MatrixSdkAccessService {
   public getAllRoomsOfLoggedInUser(): MessengerRoom[]{
     this.checkForValidClient();
 
-    const rooms = this.client.getRooms();
+    const rooms: any[] = this.client.getRooms();
     let allRooms: MessengerRoom[] = [];
     for (let index = 0; index < rooms.length; index++) {
         const room = rooms[index];
@@ -102,7 +102,7 @@ export class MatrixSdkAccessService {
     const allRooms: MessengerRoom[] = this.getAllRoomsOfLoggedInUser();
     const unencryptedRooms: MessengerRoom[] = [];
     for (let index = 0; index < allRooms.length; index++) {
-      const room = allRooms[index];
+      const room: any = allRooms[index];
       const isEncrypted: boolean = this.client.isRoomEncrypted(room.roomId);
 
       if (! isEncrypted) {
@@ -115,11 +115,11 @@ export class MatrixSdkAccessService {
   public createRoom(roomName: string, roomDescription: string, callback?: CallableFunction): Promise<MessengerRoom>{
     this.checkForValidClient();
 
-    const options = {
+    const options: {topic: string, name: string} = {
       topic: roomDescription,
       name: roomName
     }
-    const that = this;
+    const that: MatrixSdkAccessService = this;
     return new Promise(function(resolve,reject){
       that.client.createRoom(options).then(
         (createRoomRes: any) => {
@@ -151,9 +151,9 @@ export class MatrixSdkAccessService {
   public deleteRoom(roomId: string, callback?: CallableFunction): Promise<MessengerRoom>{
     this.checkForValidClient();
 
-    const that = this;
+    const that: MatrixSdkAccessService = this;
 
-    const room = this.client.getRoom(roomId);
+    const room: any = this.client.getRoom(roomId);
     if (!room) {
       return new Promise(function(resolve, reject){
         reject("Room can not be delete because it was not found");
@@ -168,7 +168,7 @@ export class MatrixSdkAccessService {
       that.client.leave(roomId).then(
         (leaveRes: any)=>{
           that.client.forget(roomId).then(
-            (forgetRes: any)=>{
+            (forgetRes: {})=>{
               
               resolve(forgottenRoom);
               if(callback) {
@@ -192,7 +192,7 @@ export class MatrixSdkAccessService {
   public getLoggedInUser(): MessengerUser{
     this.checkForValidClient();
 
-    const name = "My Name"//TODO: Get the displayName of the currently logged in user correctly
+    const name: string= "My Name"//TODO: Get the displayName of the currently logged in user correctly
     return {userDisplayName: name, userId: this.client.userName};
   }
 
@@ -205,7 +205,7 @@ export class MatrixSdkAccessService {
     const users: any[] = room.getJoinedMembers();
 
     for (let i = 0; i < users.length; i++) {
-      const user = users[i];
+      const user: any = users[i];
       const userName: string = user.name;
       const userId: string = user.userId;
       members.push({userId: userId, userDisplayName: userName});
@@ -222,11 +222,11 @@ export class MatrixSdkAccessService {
 
     //Collecting users in dictionary for eliminating duplicates
     for (let index = 0; index < rooms.length; index++) {
-      const room = rooms[index];
+      const room: any = rooms[index];
       room.loadMembersIfNeeded()
-      const users = room.getJoinedMembers();
+      const users: any[] = room.getJoinedMembers();
       for (let j = 0; j < users.length; j++) {
-          const user = users[j];
+          const user: any = users[j];
           const userName: string = user.name;
           const userId: string = user.userId;
           userNamesByIds[userId] = userName;
@@ -293,7 +293,7 @@ export class MatrixSdkAccessService {
     const room: any = this.client.getRoom(roomId);
     room.timeline.forEach((event: any) => {
         if(event.getType() == "m.room.message" && event.getContent().body != ""){          
-          const room = this.client.getRoom(event.getRoomId());
+          const room: any = this.client.getRoom(event.getRoomId());
           const sender: any = room.getMember(event.getSender());
 
           const roomId: string = room.roomId;
@@ -346,7 +346,7 @@ export class MatrixSdkAccessService {
     return directChats;
   }
 
-  private createDM(userId: string, callback?:CallableFunction):Promise<MessengerDirectChat> {
+  private createDM(userId: string, callback?:CallableFunction): Promise<MessengerDirectChat> {
     this.checkForValidClient();
 
     const options = {
@@ -356,15 +356,15 @@ export class MatrixSdkAccessService {
       preset: 'trusted_private_chat',
       initial_state: [],
     };
-    const that = this;
+    const that: MatrixSdkAccessService = this;
   
     return new Promise(function(resolve, reject){
       that.client.createRoom(options).then(
         (createRoomRes:any)=>{
           const roomId: string = createRoomRes.room_id;
 
-          const directsEvent = that.client.getAccountData('m.direct');
-          let userIdToRoomIds: { [key:string] : [value:string] } = {};
+          const directsEvent: any = that.client.getAccountData('m.direct');
+          let userIdToRoomIds: { [key:string] : string[] } = {};
           if (typeof directsEvent !== 'undefined'){
             userIdToRoomIds = directsEvent.getContent();
           }
@@ -382,7 +382,7 @@ export class MatrixSdkAccessService {
           });
         
           // now add it, if it's not already there
-          const roomIds = userIdToRoomIds[userId] || [];
+          const roomIds: string[] = userIdToRoomIds[userId] || [];
           if (roomIds.indexOf(roomId) === -1) {
             roomIds.push(roomId);
           }
@@ -427,7 +427,7 @@ export class MatrixSdkAccessService {
     const allDms: MessengerDirectChat[] = this.getAllDmsOfLoggedInUser();
 
     for (let index = 0; index < allDms.length; index++) {
-      const dm = allDms[index];
+      const dm: MessengerDirectChat = allDms[index];
       if (dm.user.userId == userId) {
         this.sendMessageToRoom(dm.room.roomId, message);
         return;
@@ -451,7 +451,7 @@ export class MatrixSdkAccessService {
     const allDms: MessengerDirectChat[] = this.getAllDmsOfLoggedInUser();
     
     for (let index = 0; index < allDms.length; index++) {
-      const dm = allDms[index];
+      const dm: MessengerDirectChat = allDms[index];
       if (dm.user.userId == userId) {
         return this.getAllMessagesFromRoom(dm.room.roomId);
       }
