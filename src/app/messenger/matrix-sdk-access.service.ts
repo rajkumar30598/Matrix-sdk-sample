@@ -168,10 +168,6 @@ export class MatrixSdkAccessService {
   public getLoggedInUser(): MessengerUser{
     this.checkForValidClient();
 
-    console.log("Client-Object", this.client);
-    console.log("USER-Object", this.client.userId);
-    console.log("USER-Object", this.client.getUser(this.client.userId));
-    //console.log("USER-Name", matrixcs.getMyUser());
     const name = "My Name"//TODO: Get this correctly
     return {userDisplayName: name, userId: this.client.userName};
   }
@@ -223,6 +219,8 @@ export class MatrixSdkAccessService {
   }
 
   public getAllDmsOfLoggedInUser(): MessengerDirectChat[]{
+    this.checkForValidClient();
+
     const directChats: MessengerDirectChat[] = [];
 
     const dms: any = this.client
@@ -249,6 +247,8 @@ export class MatrixSdkAccessService {
   }
 
   public createDM(userId: string, callback?:CallableFunction):Promise<MessengerDirectChat> {
+    this.checkForValidClient();
+
     const options = {
       is_direct: true,
       invite: [userId],
@@ -304,7 +304,6 @@ export class MatrixSdkAccessService {
                   userDisplayName: room.getMember(userId).name
                 }
               };
-              console.log("DirectChat", directChat);
 
               resolve(directChat);
               if (callback) {
@@ -325,6 +324,8 @@ export class MatrixSdkAccessService {
   }
 
   public sendDM(userId: string, message:string){
+    this.checkForValidClient();
+    
     const allDms: MessengerDirectChat[] = this.getAllDmsOfLoggedInUser();
 
     for (let index = 0; index < allDms.length; index++) {

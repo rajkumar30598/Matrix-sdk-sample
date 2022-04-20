@@ -16,8 +16,8 @@ export class AppComponent {
   title = 'matrix-js-sdk-test';
  
   nameOfLoggedInUser = "Max";
-  username: string = "brian.kuhn";
-  password: string = "5V.DujETvufY";
+  username: string = "max.muster";
+  password: string = "secret";
   
   newRoomName: string = "Neuer Raum";
 
