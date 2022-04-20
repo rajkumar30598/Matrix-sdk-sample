@@ -15,7 +15,7 @@ export class MatrixSdkAccessService {
   constructor() { }
 
   /* General Actions */
-  public login(username: string, password: string, callback?: CallableFunction): Promise<any>{
+  public login(username: string, password: string, callback?: CallableFunction): Promise<{}>{
     this.client = matrixcs.createClient(MatrixSdkAccessService.BASE_URL);
     const that = this;
 
@@ -28,9 +28,9 @@ export class MatrixSdkAccessService {
                 (syncRes)=>{
                   if (syncRes.state == "PREPARED") {
                     if (callback) {
-                      callback();
+                      callback({});
                     }
-                    resolve(that.client);
+                    resolve({});
                     that.getAllDmsOfLoggedInUser();
                   }else{
                     reject("Sync Status was not PREPARED");
@@ -54,15 +54,19 @@ export class MatrixSdkAccessService {
     //TODO: Implement a function that registers a user
   }
 
-  private synchronize(callback?: CallableFunction): Promise<any>{
+  private synchronize(callback?: CallableFunction): Promise<{state:string, prevState:string}>{
     this.checkForValidClient();
-
     const that = this;
     return new Promise(function(resolve, reject){
       that.client.once('sync', (state: any, prevState: any, res:any) =>{
-        resolve({state:state, prevState:prevState, res:res});
+
+        const result: {state:string, prevState:string} = {
+          state:state,
+          prevState:prevState
+        }
+        resolve(result);
         if (callback) {
-          callback();
+          callback(result);
         }
       });      
     })
@@ -108,7 +112,7 @@ export class MatrixSdkAccessService {
     return unencryptedRooms;
   }
 
-  public createRoom(roomName: string, roomDescription: string, callback?: CallableFunction): Promise<any>{
+  public createRoom(roomName: string, roomDescription: string, callback?: CallableFunction): Promise<MessengerRoom>{
     this.checkForValidClient();
 
     const options = {
@@ -118,11 +122,19 @@ export class MatrixSdkAccessService {
     const that = this;
     return new Promise(function(resolve,reject){
       that.client.createRoom(options).then(
-        (res: any) => {
+        (createRoomRes: any) => {
+          
+          const roomId: string = createRoomRes.room_id;
+          const messengerRoom: MessengerRoom = {
+            roomId: roomId,
+            roomDisplayName: that.client.getRoom(roomId).name
+          };
+
           if (callback) {
-            callback();
+            callback(messengerRoom);
           }
-          resolve(res);
+          resolve(messengerRoom);
+          
         },
         (err: any) =>{
           reject(err);
@@ -136,19 +148,31 @@ export class MatrixSdkAccessService {
     this.client.invite(userId, roomId);
   }
 
-  public deleteRoom(roomId: string, callback?: CallableFunction): Promise<any>{
+  public deleteRoom(roomId: string, callback?: CallableFunction): Promise<MessengerRoom>{
     this.checkForValidClient();
 
     const that = this;
+
+    const room = this.client.getRoom(roomId);
+    if (!room) {
+      return new Promise(function(resolve, reject){
+        reject("Room can not be delete because it was not found");
+      })
+    }
+    const forgottenRoom: MessengerRoom = {
+      roomId: roomId,
+      roomDisplayName: room.name
+    }
 
     return new Promise(function(resolve, reject){
       that.client.leave(roomId).then(
         (leaveRes: any)=>{
           that.client.forget(roomId).then(
             (forgetRes: any)=>{
-              resolve(forgetRes);
+              
+              resolve(forgottenRoom);
               if(callback) {
-                callback();
+                callback(forgottenRoom);
               }
             },
             (forgetErr: any)=>{
@@ -322,7 +346,7 @@ export class MatrixSdkAccessService {
     return directChats;
   }
 
-  public createDM(userId: string, callback?:CallableFunction):Promise<MessengerDirectChat> {
+  private createDM(userId: string, callback?:CallableFunction):Promise<MessengerDirectChat> {
     this.checkForValidClient();
 
     const options = {
@@ -338,8 +362,6 @@ export class MatrixSdkAccessService {
       that.client.createRoom(options).then(
         (createRoomRes:any)=>{
           const roomId: string = createRoomRes.room_id;
-
- 
 
           const directsEvent = that.client.getAccountData('m.direct');
           let userIdToRoomIds: { [key:string] : [value:string] } = {};
@@ -383,7 +405,7 @@ export class MatrixSdkAccessService {
 
               resolve(directChat);
               if (callback) {
-                callback()
+                callback(directChat)
               }
             },
             (setAccErr: any) =>{

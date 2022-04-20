@@ -38,7 +38,6 @@ export class AppComponent {
   constructor(matrixSdkAccessService: MatrixSdkAccessService){
 
     this._matrixSdkAccessService = matrixSdkAccessService;
-
   }
 
   async onLoginBtClick(){
