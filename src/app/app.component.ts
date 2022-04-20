@@ -49,6 +49,7 @@ export class AppComponent {
       this.updateUsers();
       this.updateDms();
       this._matrixSdkAccessService.registerOnMessageListener(this.onMessageArrived);
+      this._matrixSdkAccessService.registerOnRoomJoinedListener((this.onRoomJoined).bind(this));
       
     });
   }
@@ -101,6 +102,11 @@ export class AppComponent {
   }
 
   onMessageArrived(message:MessengerMessage){
-      alert(message.sender.userDisplayName + " hat eine Nachricht in " + message.room.roomDisplayName + " gesendet: " + message.content);
+    alert(message.sender.userDisplayName + " hat eine Nachricht in " + message.room.roomDisplayName + " gesendet: " + message.content);
+  }
+
+  onRoomJoined(room: MessengerRoom){
+    alert("Du bist dem Raum" + room.roomDisplayName + " hinzugefügt worden");
+    this.updateRooms();
   }
 }

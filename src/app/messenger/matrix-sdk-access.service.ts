@@ -39,12 +39,12 @@ export class MatrixSdkAccessService {
               return that.synchronize().then(
                 (syncRes)=>{
                   if (syncRes.state == "PREPARED") {
+                    that.activateAutoJoinRoomWhenInvited();
                     const yourUser: MessengerUser = that.getLoggedInUser();
                     if (callback) {
                       callback(yourUser);
                     }
                     resolve(yourUser);
-                    that.getAllDmsOfLoggedInUser();
                   }else{
                     if (callback) {
                       callback(null);
@@ -362,15 +362,16 @@ export class MatrixSdkAccessService {
     );
   }
 
-/**
- * Registers a method, which is executed every time a text-message arrives
- * @param {(msg:MessengerMessage)=>any} onMessageArrived a method that is executed every time a text-message arrives
- * Has to take one parameter of type MessengerMessage, which will contain information about the arrived message
- */
+  /**
+   * Registers a method, which is executed every time a text-message arrives
+   * @param {(msg:MessengerMessage)=>any} onMessageArrived a method that is executed every time a text-message arrives
+   * Has to take one parameter of type MessengerMessage, which will contain information about the arrived message
+   */
   public registerOnMessageListener(onMessageArrived: (msg:MessengerMessage)=>any): void{
     this.checkForValidClient();
 
     this.client.on("Room.timeline", function(event:any, room:any, toStartOfTimeline:any) {
+      console.log("EVENT OCCURED" + event);
       if (event.getType() == "m.room.message" && event.getContent().body != "") {
 
           const sender: any = room.getMember(event.getSender());
@@ -394,6 +395,46 @@ export class MatrixSdkAccessService {
           }
           onMessageArrived(message);
         }
+    });
+  }
+
+  /**
+   * Registers a method, which is executed every time you join a room
+   * @param onRoomJoined a method that is executed every time the user is added to a group
+   * Has to take one parameter of type MessengerRoom, which will contain information about the room that you have joined.
+   */
+  public registerOnRoomJoinedListener(onRoomJoined: (room:MessengerRoom)=>any):void{
+    this.checkForValidClient();
+
+    const that: MatrixSdkAccessService = this;
+    const myUserId = this.getLoggedInUser().userId;
+
+    this.client.on("RoomMember.membership", function(event: any, member: any) {
+      if (member.membership === "join" && member.userId === myUserId) {
+        const roomId = member.roomId;
+        const roomName = that.client.getRoom(roomId).name;
+        const room: MessengerRoom = {
+          roomDisplayName: roomName,
+          roomId: roomId
+        };
+        onRoomJoined(room);
+      }
+    });
+  }
+
+  /**
+   * Enables the functionallity of automatically joining a room when you are invited
+   */
+  private activateAutoJoinRoomWhenInvited(): void{
+    this.checkForValidClient();
+
+    const that: MatrixSdkAccessService = this;
+    const myUserId = this.getLoggedInUser().userId;
+
+    this.client.on("RoomMember.membership", function(event: any, member: any) {
+      if (member.membership === "invite" && member.userId === myUserId) {
+        that.client.joinRoom(member.roomId);
+      }
     });
   }
 
