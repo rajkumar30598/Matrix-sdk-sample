@@ -51,7 +51,7 @@ export class MatrixSdkAccessService {
   }
 
   public register(username: string, password: string, callback?:CallableFunction){
-    //TODO: Implement
+    //TODO: Implement a function that registers a user
   }
 
   private synchronize(callback?: CallableFunction): Promise<any>{
@@ -168,7 +168,7 @@ export class MatrixSdkAccessService {
   public getLoggedInUser(): MessengerUser{
     this.checkForValidClient();
 
-    const name = "My Name"//TODO: Get this correctly
+    const name = "My Name"//TODO: Get the displayName of the currently logged in user correctly
     return {userDisplayName: name, userId: this.client.userName};
   }
 
@@ -218,6 +218,82 @@ export class MatrixSdkAccessService {
     return allUsers;
   }
 
+  /* Message Actions */
+
+  public sendMessageToRoom(roomId: string, messageText: string): void{
+    this.checkForValidClient();
+
+    this.client.sendMessage(
+      roomId,
+      {
+          body: messageText,
+          msgtype: 'm.text',
+      }
+    );
+  }
+
+  public registerOnMessageListener(onMessageArrived: CallableFunction): void{
+    this.checkForValidClient();
+
+    this.client.on("Room.timeline", function(event:any, room:any, toStartOfTimeline:any) {
+      if (event.getType() == "m.room.message" && event.getContent().body != "") {
+
+          const sender: any = room.getMember(event.getSender());
+          const senderName: string = sender.name;
+          const senderId: string = sender.userId;
+
+          if (room.myUserId == senderId) {
+            return;
+          }
+
+          const messageText: string = event.getContent().body;
+          const roomName: string = room.name;
+          const roomId: string = event.getRoomId();
+
+          const date: Date = new Date(event.localTimestamp);
+
+          const message: MessengerMessage = {
+            sender: {userDisplayName: senderName, userId: senderId},
+            room: {roomDisplayName: roomName, roomId: roomId},
+            content: messageText, date: date
+          }
+          onMessageArrived(message);
+        }
+    });
+  }
+
+  public getAllMessagesFromRoom(roomId: string): MessengerMessage[]{
+    this.checkForValidClient();
+
+    const allMessages: MessengerMessage[] = [];
+    const room: any = this.client.getRoom(roomId);
+    room.timeline.forEach((event: any) => {
+        if(event.getType() == "m.room.message" && event.getContent().body != ""){          
+          const room = this.client.getRoom(event.getRoomId());
+          const sender: any = room.getMember(event.getSender());
+
+          const roomId: string = room.roomId;
+          const roomName: string = room.name;
+
+          const senderId: string = sender.userId;
+          const senderName: string = sender.name;
+
+          const content: string = event.getContent().body;
+
+          const date: Date = new Date(event.localTimestamp);
+
+          const message: MessengerMessage = {
+            sender: {userId: senderId, userDisplayName: senderName},
+            room: {roomId: roomId, roomDisplayName: roomName},
+            content: content, date: date
+          }
+          allMessages.push(message);
+        }        
+    });
+    return allMessages;
+  }
+
+  /* Direct Chat Actions */
   public getAllDmsOfLoggedInUser(): MessengerDirectChat[]{
     this.checkForValidClient();
 
@@ -325,7 +401,7 @@ export class MatrixSdkAccessService {
 
   public sendDM(userId: string, message:string){
     this.checkForValidClient();
-    
+
     const allDms: MessengerDirectChat[] = this.getAllDmsOfLoggedInUser();
 
     for (let index = 0; index < allDms.length; index++) {
@@ -348,80 +424,16 @@ export class MatrixSdkAccessService {
 
   }
 
-  /* Message Actions */
+  public getAllMessagesFromUser(userId: string): MessengerMessage[]{
 
-  public sendMessageToRoom(roomId: string, messageText: string): void{
-    this.checkForValidClient();
-
-    this.client.sendMessage(
-      roomId,
-      {
-          body: messageText,
-          msgtype: 'm.text',
+    const allDms: MessengerDirectChat[] = this.getAllDmsOfLoggedInUser();
+    
+    for (let index = 0; index < allDms.length; index++) {
+      const dm = allDms[index];
+      if (dm.user.userId == userId) {
+        return this.getAllMessagesFromRoom(dm.room.roomId);
       }
-    );
+    }
+    return [];    
   }
-
-  public registerOnMessageListener(onMessageArrived: CallableFunction): void{
-    this.checkForValidClient();
-
-    this.client.on("Room.timeline", function(event:any, room:any, toStartOfTimeline:any) {
-      if (event.getType() == "m.room.message" && event.getContent().body != "") {
-
-          const sender: any = room.getMember(event.getSender());
-          const senderName: string = sender.name;
-          const senderId: string = sender.userId;
-
-          if (room.myUserId == senderId) {
-            return;
-          }
-
-          const messageText: string = event.getContent().body;
-          const roomName: string = room.name;
-          const roomId: string = event.getRoomId();
-
-          const date: Date = new Date(event.localTimestamp);
-
-          const message: MessengerMessage = {
-            sender: {userDisplayName: senderName, userId: senderId},
-            room: {roomDisplayName: roomName, roomId: roomId},
-            content: messageText, date: date
-          }
-          onMessageArrived(message);
-        }
-    });
-  }
-
-  public getAllMessagesFromRoom(roomId: string): MessengerMessage[]{
-    this.checkForValidClient();
-
-    const allMessages: MessengerMessage[] = [];
-    const room: any = this.client.getRoom(roomId);
-    room.timeline.forEach((event: any) => {
-        if(event.getType() == "m.room.message" && event.getContent().body != ""){          
-          const room = this.client.getRoom(event.getRoomId());
-          const sender: any = room.getMember(event.getSender());
-
-          const roomId: string = room.roomId;
-          const roomName: string = room.name;
-
-          const senderId: string = sender.userId;
-          const senderName: string = sender.name;
-
-          const content: string = event.getContent().body;
-
-          const date: Date = new Date(event.localTimestamp);
-
-          const message: MessengerMessage = {
-            sender: {userId: senderId, userDisplayName: senderName},
-            room: {roomId: roomId, roomDisplayName: roomName},
-            content: content, date: date
-          }
-          allMessages.push(message);
-        }        
-    });
-    return allMessages;
-  }
-
-
 }
