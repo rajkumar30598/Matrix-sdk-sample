@@ -72,7 +72,16 @@ export class MatrixSdkAccessService {
     })
   }
 
-  public register(username: string, password: string, callback?:(newUser: MessengerUser|null)=>any){
+  /**
+   * Registers a new user by giving him a new MatrixID
+   * @param {string} username username, the user will get
+   * @param {string} password password, the user will get
+   * @param {(param: MessengerUser|null)=>any} callback method that will be executed, when the method finishes. Has to take one Argument
+   * of type MessengerUser or null. Parameter will be null if the registration-process fails.
+   * Parameter will contain the newly generated User, if the registration-process succeeds.
+   * @returns {Promise<MessengerUser>} the new messenger-user
+   */
+  public register(username: string, password: string, callback?:(newUser: MessengerUser|null)=>any): Promise<MessengerUser>{
     
     this.client = matrixcs.createClient(MatrixSdkAccessService.BASE_URL);
     const that: MatrixSdkAccessService = this;
