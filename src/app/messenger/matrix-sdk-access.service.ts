@@ -29,18 +29,23 @@ export class MatrixSdkAccessService {
    */
   public login(username: string, password: string, callback?: (user: MessengerUser|null) => any): Promise<MessengerUser>{
     this.client = matrixcs.createClient(MatrixSdkAccessService.BASE_URL);
-    const that: MatrixSdkAccessService = this;
+
+    //Store methods for binding this
+    const client: any = this.client;
+    const synchronize: Function = this.synchronize.bind(this);
+    const getLoggedInUser: Function = this.getAllDmsOfLoggedInUser.bind(this);
+    const activateAutoJoin: Function = this.activateAutoJoinRoomWhenInvited.bind(this);
 
     return new Promise(function(resolve,reject){
-      that.client.loginWithPassword(username, password).then(
+      client.loginWithPassword(username, password).then(
         (loginRes: any) =>{
-          return that.client.startClient().then(
+          return client.startClient().then(
             (startRes: any) =>{
-              return that.synchronize().then(
-                (syncRes)=>{
+              return synchronize().then(
+                (syncRes: any)=>{
                   if (syncRes.state == "PREPARED") {
-                    that.activateAutoJoinRoomWhenInvited();
-                    const yourUser: MessengerUser = that.getLoggedInUser();
+                    activateAutoJoin();
+                    const yourUser: MessengerUser = getLoggedInUser();
                     if (callback) {
                       callback(yourUser);
                     }
