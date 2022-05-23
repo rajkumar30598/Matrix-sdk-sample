@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { environment } from 'src/environments/environment';
 import { MatrixSdkAccessService } from './messenger/matrix-sdk-access.service';
 import { MessengerDirectChat } from './messenger/messenger-direct-chat';
 import { MessengerMessage } from './messenger/messenger-message';
@@ -16,8 +17,8 @@ export class AppComponent {
   title = 'matrix-js-sdk-test';
  
   nameOfLoggedInUser = "Max";
-  username: string = "max.muster";
-  password: string = "secret";
+  username: string = environment.personalMatrixAccount.username;
+  password: string = environment.personalMatrixAccount.password;
   
   newRoomName: string = "Neuer Raum";
 

@@ -5,6 +5,7 @@ import { MessengerRoom } from './messenger-room';
 import { MessengerUser } from './messenger-user';
 declare const matrixcs: any;
 
+
 @Injectable({
   providedIn: 'root'
 })
@@ -659,5 +660,10 @@ export class MatrixSdkAccessService {
       }
     }
     return [];    
+  }
+
+
+  public listAllMatrixUsersOnServer(){
+
   }
 }
