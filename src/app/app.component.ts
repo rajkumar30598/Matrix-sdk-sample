@@ -19,6 +19,9 @@ export class AppComponent {
   nameOfLoggedInUser = "Max";
   username: string = environment.personalMatrixAccount.username;
   password: string = environment.personalMatrixAccount.password;
+
+  newUsername: string = "max.muster";
+  newPassword: string = "";
   
   newRoomName: string = "Neuer Raum";
 
@@ -33,12 +36,15 @@ export class AppComponent {
   enteredMsgTxt: string = "Hello World";
   enteredDirectMsgTxt: string = "Hello World";
   afterLoginSectionHidden: boolean = true;
+
+  newMatrixIdPassword: string = environment.personalMatrixAccount.password;
  
   _matrixSdkAccessService: MatrixSdkAccessService;
 
   constructor(matrixSdkAccessService: MatrixSdkAccessService){
 
     this._matrixSdkAccessService = matrixSdkAccessService;
+    this._matrixSdkAccessService.getAdminAccessToken();
   }
 
   async onLoginBtClick(){
@@ -83,6 +89,23 @@ export class AppComponent {
 
   onInviteToRoomBtClick(){
     this._matrixSdkAccessService.inviteUserToRoom(this.selectedUserId, this.selectedRoomId);
+  }
+
+  onChangePasswordBtClick(){
+    this._matrixSdkAccessService.changePersonalPassword(this.newMatrixIdPassword);
+  }
+
+  onRegisterBtClick(){
+
+      const promise = this._matrixSdkAccessService.createNewUser(this.newUsername, this.newPassword);
+      promise.then(
+        (res: any) =>{
+          console.log(res);
+        },
+        (err: any)=>{
+          console.log(err);
+        }
+      );
   }
 
   onSendDirectMessageBtClick(){

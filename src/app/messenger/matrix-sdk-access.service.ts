@@ -1,4 +1,5 @@
 import { Injectable} from '@angular/core';
+import { environment } from 'src/environments/environment';
 import { MessengerDirectChat } from './messenger-direct-chat';
 import { MessengerMessage } from './messenger-message';
 import { MessengerRoom } from './messenger-room';
@@ -13,6 +14,7 @@ export class MatrixSdkAccessService {
 
   client: any;
   static BASE_URL: string = "https://studytalk.inform.hs-hannover.de";
+  static ACCESS_TOKEN_SESSION_STORE_LOC = "access_token_loc";
 
   /* General Actions */
 
@@ -40,6 +42,7 @@ export class MatrixSdkAccessService {
     return new Promise(function(resolve,reject){
       client.loginWithPassword(username, password).then(
         (loginRes: any) =>{
+          window.sessionStorage.setItem(MatrixSdkAccessService.ACCESS_TOKEN_SESSION_STORE_LOC, loginRes.access_token);
           return client.startClient().then(
             (startRes: any) =>{
               return synchronize().then(
@@ -662,8 +665,132 @@ export class MatrixSdkAccessService {
     return [];    
   }
 
+/** The Admin-Api */
 
-  public listAllMatrixUsersOnServer(){
+
+  public async getAdminAccessToken(): Promise<any>{
+
+    const body = {
+      "type": "m.login.password",
+      "user": environment.adminMatrixAccount.username,
+      "password": environment.adminMatrixAccount.password
+    };
+    const url = MatrixSdkAccessService.BASE_URL.concat("/_matrix/client/r0/login");
+
+    const postData: CallableFunction = this.postData.bind(this);
+    return new Promise(function(resolve, reject){
+
+      const promise = postData(url, body);
+      promise.then(
+        (res:any)=>{
+          resolve(res.access_token);
+        },
+        (err:any)=>{
+          reject(err);
+        }
+      )
+
+    });
+  }
+
+  public async changePersonalPassword(newPassword:string): Promise<any>{
+    console.log(this.client);
+    const accessToken =  window.sessionStorage.getItem(MatrixSdkAccessService.ACCESS_TOKEN_SESSION_STORE_LOC);
+    if (! accessToken) {
+      return;
+    }
+    const url = MatrixSdkAccessService.BASE_URL.concat("/_matrix/client/r0/account/password?access_token=", accessToken);
+    const body = {
+      'new_password': newPassword,
+    }
+
+    const postData: CallableFunction = this.postData.bind(this);
+    return new Promise(function(resolve, reject){
+      const promise = postData(url, body);
+      promise.then(
+        (res:any)=>{
+          resolve(res);
+          console.log("Result from changing password:");
+        },
+        (err:any)=>{
+          reject(err);
+        }
+      )
+    });
 
   }
+
+  public async createNewUser(username: string, password: string): Promise<any>{
+    const body = {
+      "username": username,
+      "password": password,
+      "auth": {"type":"m.login.password"}
+    };
+    const url = MatrixSdkAccessService.BASE_URL.concat("/_matrix/client/r0/register");
+
+    const postData: CallableFunction = this.postData.bind(this);
+    return new Promise(function(resolve, reject){
+      const promise = postData(url, body);
+      promise.then(
+        (res:any)=>{
+          resolve(res.access_token);
+        },
+        (err:any)=>{
+          reject(err);
+        }
+      )
+    });
+  }
+
+  public listAllMatrixUsersOnServer(){
+    const body = {
+      "type": "m.login.password",
+      "identifier": {
+        "type": "m.id.user",
+        "user": "<user_id or user localpart>"
+      },
+      "password": "<password>"
+    }
+
+    /**
+     * curl -XPOST -d '{"username":"example", "password":"wordpass", "auth": {"type":"m.login.dummy"}}' "https://localhost:8448/_matrix/client/r0/register"
+
+      {
+          "access_token": "QGV4YW1wbGU6bG9jYWxob3N0.AqdSzFmFYrLrTmteXc",
+          "home_server": "localhost",
+          "user_id": "@example:localhost"
+      }
+     */
+  }
+
+  private postData(url:string, data:any): Promise<any>{
+
+    return new Promise(function(resolve, reject){
+      let response = fetch(url, {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: {
+          "Content-Type": "application/json"
+        }
+    });
+      
+
+      response.then(
+        (fetchRes: any) => {
+          fetchRes.json().then(
+            (jsonRes: any) =>{
+              resolve(jsonRes);
+            },
+            (jsonErr: any)=>{
+              reject("Error while fetching json: " + jsonErr);
+            }
+          )
+        },
+        (fetchErr: string) => {
+          reject("Error during fetch: " + fetchErr)
+        }
+      )
+    });
+  }
+
 }
