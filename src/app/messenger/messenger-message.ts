@@ -1,9 +1,9 @@
-import { MessengerRoom } from "./messenger-room";
-import { MessengerUser } from "./messenger-user";
+import { IMessengerRoom } from "./messenger-room";
+import { IMessengerUser } from "./messenger-user";
 
-export interface MessengerMessage {
-    sender: MessengerUser;
-    room: MessengerRoom;
+export interface IMessengerMessage {
+    sender: IMessengerUser;
+    room: IMessengerRoom;
     content: String;
     date: Date;
 }

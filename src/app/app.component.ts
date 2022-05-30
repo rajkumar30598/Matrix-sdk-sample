@@ -1,10 +1,10 @@
 import { Component } from '@angular/core';
 import { environment } from 'src/environments/environment';
 import { MatrixSdkAccessService } from './messenger/matrix-sdk-access.service';
-import { MessengerDirectChat } from './messenger/messenger-direct-chat';
-import { MessengerMessage } from './messenger/messenger-message';
-import { MessengerRoom } from './messenger/messenger-room';
-import { MessengerUser } from './messenger/messenger-user';
+import { IMessengerDirectChat } from './messenger/messenger-direct-chat';
+import { IMessengerMessage } from './messenger/messenger-message';
+import { IMessengerRoom } from './messenger/messenger-room';
+import { IMessengerUser } from './messenger/messenger-user';
 
 declare const matrixcs: any;
 
@@ -14,32 +14,32 @@ declare const matrixcs: any;
   styleUrls: ['./app.component.css']
 })
 export class AppComponent {
-  title = 'matrix-js-sdk-test';
+  public title = 'matrix-js-sdk-test';
  
-  nameOfLoggedInUser = "Max";
-  username: string = environment.personalMatrixAccount.username;
-  password: string = environment.personalMatrixAccount.password;
+  public nameOfLoggedInUser = "Max";
+  public username: string = environment.personalMatrixAccount.username;
+  public password: string = environment.personalMatrixAccount.password;
 
-  newUsername: string = "max.muster";
-  newPassword: string = "";
+  public newUsername: string = "max.muster";
+  public newPassword: string = "";
   
-  newRoomName: string = "Neuer Raum";
+  public newRoomName: string = "Neuer Raum";
 
-  allRooms: MessengerRoom[] = [];
-  allUsers: MessengerUser[] = [];
-  allDms: MessengerDirectChat[] = [];
+  public allRooms: IMessengerRoom[] = [];
+  public allUsers: IMessengerUser[] = [];
+  public allDms: IMessengerDirectChat[] = [];
 
-  allMessagesInSelectedRoom: MessengerMessage[] = [];
-  selectedRoomId: string = "";
-  selectedUserId: string = "";
+  public allMessagesInSelectedRoom: IMessengerMessage[] = [];
+  public selectedRoomId: string = "";
+  public selectedUserId: string = "";
 
-  enteredMsgTxt: string = "Hello World";
-  enteredDirectMsgTxt: string = "Hello World";
-  afterLoginSectionHidden: boolean = true;
+  public enteredMsgTxt: string = "Hello World";
+  public enteredDirectMsgTxt: string = "Hello World";
+  public afterLoginSectionHidden: boolean = true;
 
-  newMatrixIdPassword: string = environment.personalMatrixAccount.password;
+  public newMatrixIdPassword: string = environment.personalMatrixAccount.password;
  
-  _matrixSdkAccessService: MatrixSdkAccessService;
+  private _matrixSdkAccessService: MatrixSdkAccessService;
 
   constructor(matrixSdkAccessService: MatrixSdkAccessService){
 
@@ -57,45 +57,44 @@ export class AppComponent {
       this.updateDms();
       this._matrixSdkAccessService.registerOnMessageListener(this.onMessageArrived);
       this._matrixSdkAccessService.registerOnRoomJoinedListener((this.onRoomJoined).bind(this));
-      
     });
   }
 
-  onCreateRoomBtClick(){
-    const that = this;
+  public onCreateRoomBtClick(){
+    const updateRooms = this.updateRooms.bind(this);
     this._matrixSdkAccessService.createRoom(this.newRoomName, "Testraum").then(
       (res) => {
-        that.updateRooms();
+        updateRooms();
       }
     )
   }
 
-  onSendMessageToRoomBtClick(){
+  public onSendMessageToRoomBtClick(){
     this._matrixSdkAccessService.sendMessageToRoom(this.selectedRoomId, this.enteredMsgTxt);
   }
 
-  onShowMessagesOfRoomBtClick(){
+  public onShowMessagesOfRoomBtClick(){
     this.allMessagesInSelectedRoom = this._matrixSdkAccessService.getAllMessagesFromRoom(this.selectedRoomId);
   }
 
-  onDeleteRoomBtClick(){
-    const that = this;
+  public onDeleteRoomBtClick(){
+    const updateRooms = this.updateRooms.bind(this);
     this._matrixSdkAccessService.deleteRoom(this.selectedRoomId).then(
       (res)=>{
-        that.updateRooms();
+        updateRooms();
       }
     );
   }
 
-  onInviteToRoomBtClick(){
+  public onInviteToRoomBtClick(){
     this._matrixSdkAccessService.inviteUserToRoom(this.selectedUserId, this.selectedRoomId);
   }
 
-  onChangePasswordBtClick(){
+  public onChangePasswordBtClick(){
     this._matrixSdkAccessService.changePersonalPassword(this.newMatrixIdPassword);
   }
 
-  onRegisterBtClick(){
+  public onRegisterBtClick(){
 
       const promise = this._matrixSdkAccessService.createNewUser(this.newUsername, this.newPassword);
       promise.then(
@@ -108,28 +107,28 @@ export class AppComponent {
       );
   }
 
-  onSendDirectMessageBtClick(){
+  public onSendDirectMessageBtClick(){
     this._matrixSdkAccessService.sendDM(this.selectedUserId, this.enteredDirectMsgTxt);
   }
   /* UI */
 
-  updateRooms(){
+  public updateRooms(){
     this.allRooms = this._matrixSdkAccessService.getAllRoomsOfLoggedInUser();
   }
 
-  updateUsers(){
+  public updateUsers(){
     this.allUsers = this._matrixSdkAccessService.getAllMembersOfRoomsOfLoggedInUser();
   }
 
-  updateDms(){
+  public updateDms(){
     this.allDms = this._matrixSdkAccessService.getAllDmsOfLoggedInUser();
   }
 
-  onMessageArrived(message:MessengerMessage){
+  public onMessageArrived(message:IMessengerMessage){
     alert(message.sender.userDisplayName + " hat eine Nachricht in " + message.room.roomDisplayName + " gesendet: " + message.content);
   }
 
-  onRoomJoined(room: MessengerRoom){
+  public onRoomJoined(room: IMessengerRoom){
     alert("Du bist dem Raum" + room.roomDisplayName + " hinzugefügt worden");
     this.updateRooms();
   }

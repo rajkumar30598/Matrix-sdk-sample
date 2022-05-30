@@ -1,4 +1,4 @@
-export interface MessengerUser {
+export interface IMessengerUser {
     userDisplayName: string;
     userId: string;
 }

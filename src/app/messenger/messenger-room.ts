@@ -1,4 +1,4 @@
-export interface MessengerRoom {
+export interface IMessengerRoom {
     roomId: string;
     roomDisplayName: string;
 }

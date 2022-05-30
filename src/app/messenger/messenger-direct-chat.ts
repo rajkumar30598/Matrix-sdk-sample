@@ -1,7 +1,7 @@
-import { MessengerRoom } from "./messenger-room";
-import { MessengerUser } from "./messenger-user";
+import { IMessengerRoom } from "./messenger-room";
+import { IMessengerUser } from "./messenger-user";
 
-export interface MessengerDirectChat {
-    user: MessengerUser;
-    room: MessengerRoom;
+export interface IMessengerDirectChat {
+    user: IMessengerUser;
+    room: IMessengerRoom;
 }
