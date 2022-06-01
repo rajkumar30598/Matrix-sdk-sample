@@ -132,10 +132,39 @@ export class MatrixUserManagementService {
           };
           MatrixUserManagementService.postData(url, data).then(
             (changePwRes: any) =>{
-              resolve(changePwRes.registration_tokens);
+              resolve(changePwRes);
             },
             (changePwErr: string) =>{
               reject("Error while changing password of user "+ username + " : "+ changePwErr)
+            },
+          )   
+
+        },
+        (adminAccessTokenErr: any) =>{
+          reject("Failed while getting Admin-Acces-Token: " + adminAccessTokenErr);
+        }
+      )
+    });
+  }
+
+  /* Delete User */
+
+  public static deactivateUser(username:string): Promise<any>{
+    const userId: string = "@".concat(username,":studytalk.inform.hs-hannover.de")
+
+    return new Promise(function(resolve, reject){
+      MatrixUserManagementService.getAdminAccessToken().then(
+        (adminAccessToken: string) =>{
+          const url: string = environment.matrixServerBaseUrl.concat("/_synapse/admin/v1/deactivate/", userId, "?access_token=", adminAccessToken);
+          const data = {
+            "erase": true
+          };
+          MatrixUserManagementService.postData(url, data).then(
+            (deactivateRes: any) =>{
+              resolve(deactivateRes);
+            },
+            (deactivateErr: string) =>{
+              reject("Error while deactivating user "+ username + " : "+ deactivateErr)
             },
           )   
 
