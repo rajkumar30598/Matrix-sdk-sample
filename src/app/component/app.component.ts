@@ -1,12 +1,10 @@
 import { Component } from '@angular/core';
 import { environment } from 'src/environments/environment';
-import { MatrixSdkAccessService } from '../messenger/matrix-sdk-access.service';
-import { IMessengerDirectChat } from '../messenger/messenger-direct-chat';
-import { IMessengerMessage } from '../messenger/messenger-message';
-import { IMessengerRoom } from '../messenger/messenger-room';
-import { IMessengerUser } from '../messenger/messenger-user';
-
-declare const matrixcs: any;
+import { MatrixSdkAccessService } from '../services/matrix-sdk-access.service';
+import { IMessengerDirectChat } from '../messenger-interfaces/messenger-direct-chat';
+import { IMessengerMessage } from '../messenger-interfaces/messenger-message';
+import { IMessengerRoom } from '../messenger-interfaces/messenger-room';
+import { IMessengerUser } from '../messenger-interfaces/messenger-user';
 
 @Component({
   selector: 'app-root',

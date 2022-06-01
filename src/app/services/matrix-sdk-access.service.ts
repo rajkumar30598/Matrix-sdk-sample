@@ -1,9 +1,9 @@
 import { Injectable} from '@angular/core';
 import { environment } from 'src/environments/environment';
-import { IMessengerDirectChat } from './messenger-direct-chat';
-import { IMessengerMessage } from './messenger-message';
-import { IMessengerRoom } from './messenger-room';
-import { IMessengerUser } from './messenger-user';
+import { IMessengerDirectChat } from '../messenger-interfaces/messenger-direct-chat';
+import { IMessengerMessage } from '../messenger-interfaces/messenger-message';
+import { IMessengerRoom } from '../messenger-interfaces/messenger-room';
+import { IMessengerUser } from '../messenger-interfaces/messenger-user';
 declare const matrixcs: any;
 
 
@@ -721,6 +721,39 @@ export class MatrixSdkAccessService {
   }
 
   public async createNewUser(username: string, password: string): Promise<any>{
+    const accesToken = await this.getAdminAccessToken();
+    //await this.postData(MatrixSdkAccessService.BASE_URL.concat("/_synapse/admin/v1/registration_tokens/new?access_token=", accesToken), {});
+
+    const registerTokenRequest = fetch(MatrixSdkAccessService.BASE_URL.concat("/_synapse/admin/v1/registration_tokens?access_token=", accesToken));
+    
+    const postData = this.postData.bind(this);
+    registerTokenRequest.then(
+      (fetchRes: any) => {
+        fetchRes.json().then(
+          (jsonRes: any) =>{
+            console.log(jsonRes);
+            const registerAccessToken = jsonRes.registration_tokens[0];
+            const registrationRequestUrl = MatrixSdkAccessService.BASE_URL.concat("/_matrix/client/r0/register");
+            const registrationRequestData = {
+              "auth": {
+                "type": "m.login.registration_token",
+                "token": registerAccessToken,
+                "session": "xxxxx"
+              },
+              "device_id": "ABC",
+              "initial_device_display_name": "Some Client",
+              "password": "secret",
+              "username": "max.muster"
+            }
+            postData(registrationRequestUrl, registrationRequestData).then(
+              (res: any)=>{
+                console.log(res);
+              }
+            )
+
+          },
+    )})
+    return;
     const body = {
       "username": username,
       "password": password,
@@ -728,7 +761,6 @@ export class MatrixSdkAccessService {
     };
     const url = MatrixSdkAccessService.BASE_URL.concat("/_matrix/client/r0/register");
 
-    const postData: CallableFunction = this.postData.bind(this);
     return new Promise(function(resolve, reject){
       const promise = postData(url, body);
       promise.then(
@@ -741,6 +773,7 @@ export class MatrixSdkAccessService {
       )
     });
   }
+
 
   public listAllMatrixUsersOnServer(){
     const body = {
