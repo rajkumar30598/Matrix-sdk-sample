@@ -5,6 +5,7 @@ import { IMessengerDirectChat } from '../messenger-interfaces/messenger-direct-c
 import { IMessengerMessage } from '../messenger-interfaces/messenger-message';
 import { IMessengerRoom } from '../messenger-interfaces/messenger-room';
 import { IMessengerUser } from '../messenger-interfaces/messenger-user';
+import { MatrixUserManagementService } from '../services/matrix-user-management.service';
 
 @Component({
   selector: 'app-root',
@@ -37,12 +38,9 @@ export class AppComponent {
 
   public newMatrixIdPassword: string = environment.personalMatrixAccount.password;
  
-  private _matrixSdkAccessService: MatrixSdkAccessService;
 
-  constructor(matrixSdkAccessService: MatrixSdkAccessService){
-
-    this._matrixSdkAccessService = matrixSdkAccessService;
-    this._matrixSdkAccessService.getAdminAccessToken();
+  constructor(private _matrixSdkAccessService: MatrixSdkAccessService, private _matrixUserManagementService: MatrixUserManagementService){
+    this._matrixUserManagementService.getAdminAccessToken();
   }
 
   async onLoginBtClick(){
@@ -89,12 +87,12 @@ export class AppComponent {
   }
 
   public onChangePasswordBtClick(){
-    this._matrixSdkAccessService.changePersonalPassword(this.newMatrixIdPassword);
+    //this._matrixUserManagementService.changePersonalPassword(this.newMatrixIdPassword);
   }
 
   public onRegisterBtClick(){
 
-      const promise = this._matrixSdkAccessService.createNewUser(this.newUsername, this.newPassword);
+      const promise = this._matrixUserManagementService.createNewUser(this.newUsername, this.newPassword);
       promise.then(
         (res: any) =>{
           console.log(res);

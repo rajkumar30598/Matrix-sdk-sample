@@ -1,3 +1,4 @@
 export const environment = {
-  production: true
+  production: true,
+  matrixServerBaseUrl: "https://studytalk.inform.hs-hannover.de",
 };

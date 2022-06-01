@@ -13,7 +13,6 @@ declare const matrixcs: any;
 export class MatrixSdkAccessService {
 
   client: any;
-  static BASE_URL: string = "https://studytalk.inform.hs-hannover.de";
   static ACCESS_TOKEN_SESSION_STORE_LOC = "access_token_loc";
 
   /* General Actions */
@@ -31,7 +30,7 @@ export class MatrixSdkAccessService {
    * If the login fails the result of the promise will be the error message 
    */
   public login(username: string, password: string, callback?: (user: IMessengerUser|null) => any): Promise<IMessengerUser>{
-    this.client = matrixcs.createClient(MatrixSdkAccessService.BASE_URL);
+    this.client = matrixcs.createClient(environment.matrixServerBaseUrl);
 
     //Store methods for binding this
     const client: any = this.client;
@@ -78,30 +77,6 @@ export class MatrixSdkAccessService {
           reject(loginErr);
         }
       );    
-    })
-  }
-
-  /**
-   * Registers a new user by giving him a new MatrixID
-   * @param {string} username username, the user will get
-   * @param {string} password password, the user will get
-   * @param {(param: IMessengerUser|null)=>any} callback method that will be executed, when the method finishes. Has to take one Argument
-   * of type MessengerUser or null. Parameter will be null if the registration-process fails.
-   * Parameter will contain the newly generated User, if the registration-process succeeds.
-   * @returns {Promise<IMessengerUser>} the new messenger-user
-   */
-  public register(username: string, password: string, callback?:(newUser: IMessengerUser|null)=>any): Promise<IMessengerUser>{
-    
-    this.client = matrixcs.createClient(MatrixSdkAccessService.BASE_URL);
-    const that: MatrixSdkAccessService = this;
-    return new Promise(function(resolve,reject){
-
-      //Todo register a new user and return his MessengerUserObject
-
-      if (callback) {
-        callback(null)
-      }
-      reject("This function is not implemented yet");
     })
   }
 
@@ -663,167 +638,6 @@ export class MatrixSdkAccessService {
       }
     }
     return [];    
-  }
-
-/** The Admin-Api */
-
-
-  public async getAdminAccessToken(): Promise<any>{
-
-    const body = {
-      "type": "m.login.password",
-      "user": environment.adminMatrixAccount.username,
-      "password": environment.adminMatrixAccount.password
-    };
-    const url = MatrixSdkAccessService.BASE_URL.concat("/_matrix/client/r0/login");
-
-    const postData: CallableFunction = this.postData.bind(this);
-    return new Promise(function(resolve, reject){
-
-      const promise = postData(url, body);
-      promise.then(
-        (res:any)=>{
-          resolve(res.access_token);
-        },
-        (err:any)=>{
-          reject(err);
-        }
-      )
-
-    });
-  }
-
-  public async changePersonalPassword(newPassword:string): Promise<any>{
-    console.log(this.client);
-    const accessToken =  window.sessionStorage.getItem(MatrixSdkAccessService.ACCESS_TOKEN_SESSION_STORE_LOC);
-    if (! accessToken) {
-      return;
-    }
-    const url = MatrixSdkAccessService.BASE_URL.concat("/_matrix/client/r0/account/password?access_token=", accessToken);
-    const body = {
-      'new_password': newPassword,
-    }
-
-    const postData: CallableFunction = this.postData.bind(this);
-    return new Promise(function(resolve, reject){
-      const promise = postData(url, body);
-      promise.then(
-        (res:any)=>{
-          resolve(res);
-          console.log("Result from changing password:");
-        },
-        (err:any)=>{
-          reject(err);
-        }
-      )
-    });
-
-  }
-
-  public async createNewUser(username: string, password: string): Promise<any>{
-    const accesToken = await this.getAdminAccessToken();
-    //await this.postData(MatrixSdkAccessService.BASE_URL.concat("/_synapse/admin/v1/registration_tokens/new?access_token=", accesToken), {});
-
-    const registerTokenRequest = fetch(MatrixSdkAccessService.BASE_URL.concat("/_synapse/admin/v1/registration_tokens?access_token=", accesToken));
-    
-    const postData = this.postData.bind(this);
-    registerTokenRequest.then(
-      (fetchRes: any) => {
-        fetchRes.json().then(
-          (jsonRes: any) =>{
-            console.log(jsonRes);
-            const registerAccessToken = jsonRes.registration_tokens[0];
-            const registrationRequestUrl = MatrixSdkAccessService.BASE_URL.concat("/_matrix/client/r0/register");
-            const registrationRequestData = {
-              "auth": {
-                "type": "m.login.registration_token",
-                "token": registerAccessToken,
-                "session": "xxxxx"
-              },
-              "device_id": "ABC",
-              "initial_device_display_name": "Some Client",
-              "password": "secret",
-              "username": "max.muster"
-            }
-            postData(registrationRequestUrl, registrationRequestData).then(
-              (res: any)=>{
-                console.log(res);
-              }
-            )
-
-          },
-    )})
-    return;
-    const body = {
-      "username": username,
-      "password": password,
-      "auth": {"type":"m.login.password"}
-    };
-    const url = MatrixSdkAccessService.BASE_URL.concat("/_matrix/client/r0/register");
-
-    return new Promise(function(resolve, reject){
-      const promise = postData(url, body);
-      promise.then(
-        (res:any)=>{
-          resolve(res.access_token);
-        },
-        (err:any)=>{
-          reject(err);
-        }
-      )
-    });
-  }
-
-
-  public listAllMatrixUsersOnServer(){
-    const body = {
-      "type": "m.login.password",
-      "identifier": {
-        "type": "m.id.user",
-        "user": "<user_id or user localpart>"
-      },
-      "password": "<password>"
-    }
-
-    /**
-     * curl -XPOST -d '{"username":"example", "password":"wordpass", "auth": {"type":"m.login.dummy"}}' "https://localhost:8448/_matrix/client/r0/register"
-
-      {
-          "access_token": "QGV4YW1wbGU6bG9jYWxob3N0.AqdSzFmFYrLrTmteXc",
-          "home_server": "localhost",
-          "user_id": "@example:localhost"
-      }
-     */
-  }
-
-  private postData(url:string, data:any): Promise<any>{
-
-    return new Promise(function(resolve, reject){
-      let response = fetch(url, {
-        method: "POST",
-        body: JSON.stringify(data),
-        headers: {
-          "Content-Type": "application/json"
-        }
-    });
-      
-
-      response.then(
-        (fetchRes: any) => {
-          fetchRes.json().then(
-            (jsonRes: any) =>{
-              resolve(jsonRes);
-            },
-            (jsonErr: any)=>{
-              reject("Error while fetching json: " + jsonErr);
-            }
-          )
-        },
-        (fetchErr: string) => {
-          reject("Error during fetch: " + fetchErr)
-        }
-      )
-    });
   }
 
 }

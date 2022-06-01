@@ -11,7 +11,8 @@ export const environment = {
   adminMatrixAccount: {
       username: "",
       password: ""
-  }
+  },
+  matrixServerBaseUrl: "https://studytalk.inform.hs-hannover.de",
 };
 
 /*
