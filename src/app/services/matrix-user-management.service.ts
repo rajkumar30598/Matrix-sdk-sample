@@ -118,6 +118,35 @@ export class MatrixUserManagementService {
     });
   }
 
+  /* Reset Password */
+  public static changePassword(username: string, newPassword: string): Promise<any> {
+    const userId: string = "@".concat(username,":studytalk.inform.hs-hannover.de")
+
+    return new Promise(function(resolve, reject){
+      MatrixUserManagementService.getAdminAccessToken().then(
+        (adminAccessToken: string) =>{
+          const url: string = environment.matrixServerBaseUrl.concat("/_synapse/admin/v1/reset_password/", userId, "?access_token=", adminAccessToken);
+          const data = {
+            "new_password": newPassword,
+            "logout_devices": true
+          };
+          MatrixUserManagementService.postData(url, data).then(
+            (changePwRes: any) =>{
+              resolve(changePwRes.registration_tokens);
+            },
+            (changePwErr: string) =>{
+              reject("Error while changing password of user "+ username + " : "+ changePwErr)
+            },
+          )   
+
+        },
+        (adminAccessTokenErr: any) =>{
+          reject("Failed while getting Admin-Acces-Token: " + adminAccessTokenErr);
+        }
+      )
+    });
+  }
+
   /* Fetch-Helpers */
   private static getData(url: string): Promise<any>{
     return new Promise(function(resolve, reject){

@@ -659,6 +659,6 @@ export class MatrixSdkAccessService {
         console.log("Change Password err ", err);
       }
     )
-}
+  }
 
 }

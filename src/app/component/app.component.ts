@@ -85,9 +85,8 @@ export class AppComponent {
   }
 
   public onChangePasswordBtClick(){
-    this._matrixSdkAccessService.changePassword(
+    MatrixUserManagementService.changePassword(
       environment.personalMatrixAccount.username,
-      environment.personalMatrixAccount.password,
       this.newMatrixIdPassword
     );
   }
