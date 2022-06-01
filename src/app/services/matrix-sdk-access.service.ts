@@ -640,4 +640,25 @@ export class MatrixSdkAccessService {
     return [];    
   }
 
+  public changePassword(username: string, oldPassword: string, newPassword: string): void {
+
+    const authDict = {
+        type: 'm.login.password',
+        identifier: {
+            type: 'm.id.user',
+            user: username,
+        },
+        password: oldPassword,
+    };
+
+    this.client.setPassword(authDict, newPassword).then(
+      (res: any) =>{
+        console.log("Change Password res ", res);
+      },
+      (err: any) =>{
+        console.log("Change Password err ", err);
+      }
+    )
+}
+
 }

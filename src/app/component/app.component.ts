@@ -39,9 +39,7 @@ export class AppComponent {
   public newMatrixIdPassword: string = environment.personalMatrixAccount.password;
  
 
-  constructor(private _matrixSdkAccessService: MatrixSdkAccessService, private _matrixUserManagementService: MatrixUserManagementService){
-    this._matrixUserManagementService.getAdminAccessToken();
-  }
+  constructor(private _matrixSdkAccessService: MatrixSdkAccessService, private _matrixUserManagementService: MatrixUserManagementService){}
 
   async onLoginBtClick(){
     this._matrixSdkAccessService.login(this.username, this.password)
@@ -87,7 +85,11 @@ export class AppComponent {
   }
 
   public onChangePasswordBtClick(){
-    //this._matrixUserManagementService.changePersonalPassword(this.newMatrixIdPassword);
+    this._matrixSdkAccessService.changePassword(
+      environment.personalMatrixAccount.username,
+      environment.personalMatrixAccount.password,
+      this.newMatrixIdPassword
+    );
   }
 
   public onRegisterBtClick(){
