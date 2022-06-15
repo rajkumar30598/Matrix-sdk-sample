@@ -34,7 +34,7 @@ export class MatrixUserManagementService {
     return MatrixUserManagementService.getAccessToken(environment.adminMatrixAccount.username, environment.adminMatrixAccount.password);
   }
 
-  /* Registration */
+  /* Registration old methods. Do not use*/
   public static createNewRegistrationToken(): Promise<any>{
     return new Promise(function(resolve, reject){
       MatrixUserManagementService.getAdminAccessToken().then(
@@ -82,7 +82,7 @@ export class MatrixUserManagementService {
     });
   }
  
-  public async createNewUser(username: string, password: string): Promise<any>{
+  public async createNewUserOld(username: string, password: string): Promise<any>{
     
     return new Promise(function(resolve, reject){
       MatrixUserManagementService.getRegistrationTokens().then(
@@ -102,6 +102,39 @@ export class MatrixUserManagementService {
             "username": username
           }
           MatrixUserManagementService.postData(registrationRequestUrl, registrationRequestData).then(
+            (registerRes: any)=>{
+              resolve(registerRes);
+            },
+            (registerErr: string) => {
+              console.log("Error while registering new User " + registerErr);
+            }
+          )
+
+        },
+        (registerTokensErr: string) => {
+          console.log("Error while getting Register Tokens " + registerTokensErr);
+        }
+      )
+    });
+  }
+
+  /* Registration */
+  public async createNewUser(username: string, password: string, userDisplayName: string): Promise<any>{
+    
+    const matrixId: string = "@".concat(username,":studytalk.inform.hs-hannover.de");//Own function later
+    const registrationRequestUrl = environment.matrixServerBaseUrl.concat("/_synapse/admin/v2/users/", matrixId);   
+
+    return new Promise(function(resolve, reject){
+      MatrixUserManagementService.getAdminAccessToken().then(
+        (accessTokens: any) => {
+
+          const auth:string = "Bearer ".concat(accessTokens);
+          console.log(auth);
+          const registrationRequestData = {
+            "displayname": userDisplayName,
+            "password": password
+          }
+          MatrixUserManagementService.putData(registrationRequestUrl, registrationRequestData, auth).then(
             (registerRes: any)=>{
               resolve(registerRes);
             },
@@ -205,6 +238,36 @@ export class MatrixUserManagementService {
         body: JSON.stringify(data),
         headers: {
           "Content-Type": "application/json"
+        }
+    });
+      
+
+      response.then(
+        (fetchRes: any) => {
+          fetchRes.json().then(
+            (jsonRes: any) =>{
+              resolve(jsonRes);
+            },
+            (jsonErr: any)=>{
+              reject("Error while fetching json: " + jsonErr);
+            }
+          )
+        },
+        (fetchErr: any) => {
+          reject("Error during fetch: " + fetchErr)
+        }
+      )
+    });
+  }
+  private static putData(url:string, data:any, authorization: string): Promise<any>{
+
+    return new Promise(function(resolve, reject){
+      let response = fetch(url, {
+        method: "PUT",
+        body: JSON.stringify(data),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": authorization
         }
     });
       

@@ -38,6 +38,7 @@ export class AppComponent {
 
   public newMatrixIdPassword: string = environment.personalMatrixAccount.password;
  
+  public userNameToDelete: string = "max.muster";
 
   constructor(private _matrixSdkAccessService: MatrixSdkAccessService, private _matrixUserManagementService: MatrixUserManagementService){}
 
@@ -91,9 +92,17 @@ export class AppComponent {
     );
   }
 
+  public onDeleteUserBtClick(){
+    MatrixUserManagementService.deactivateUser(this.userNameToDelete).then(
+      (res)=>{
+        console.log(res);
+      }
+    );
+  }
+
   public onRegisterBtClick(){
 
-      const promise = this._matrixUserManagementService.createNewUser(this.newUsername, this.newPassword);
+      const promise = this._matrixUserManagementService.createNewUser(this.newUsername, this.newPassword, "Testbenutzer");
       promise.then(
         (res: any) =>{
           console.log(res);

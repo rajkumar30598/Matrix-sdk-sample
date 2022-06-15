@@ -13,6 +13,10 @@ Trage hier deine Matrix-ID-Benutzerdaten ein<br/>
 <label>Passwort:</label><input required type="password" [(ngModel)]="newPassword"/><br><br>
 <button (click)="onRegisterBtClick()">Registrieren</button>
 
+<h1>Löschen</h1>
+<label>Benutzername:</label><input required type="text" [(ngModel)]="userNameToDelete"/>
+<button (click)="onDeleteUserBtClick()">Löschen</button>
+
 <div [hidden]="afterLoginSectionHidden">
     
     <h1>Der Login hat funktioniert</h1>
