@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { environment } from 'src/environments/environment';
 import { MatrixSdkAccessService } from '../services/matrix-sdk-access.service';
 import { IMessengerDirectChat } from '../messenger-interfaces/messenger-direct-chat';
@@ -12,7 +12,7 @@ import { MatrixUserManagementService } from '../services/matrix-user-management.
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
   public title = 'matrix-js-sdk-test';
  
   public nameOfLoggedInUser = "Max";
@@ -40,7 +40,17 @@ export class AppComponent {
  
   public userNameToDelete: string = "max.muster";
 
+  public allRegisteredMatrixIds: string[] = [];
+
   constructor(private _matrixSdkAccessService: MatrixSdkAccessService, private _matrixUserManagementService: MatrixUserManagementService){}
+
+  ngOnInit(): void {
+    MatrixUserManagementService.getUsers().then(
+      (res)=>{
+        this.allRegisteredMatrixIds = res;
+      }
+    )
+  }
 
   async onLoginBtClick(){
     this._matrixSdkAccessService.login(this.username, this.password)

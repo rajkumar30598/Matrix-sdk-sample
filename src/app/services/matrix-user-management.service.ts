@@ -34,89 +34,6 @@ export class MatrixUserManagementService {
     return MatrixUserManagementService.getAccessToken(environment.adminMatrixAccount.username, environment.adminMatrixAccount.password);
   }
 
-  /* Registration old methods. Do not use*/
-  public static createNewRegistrationToken(): Promise<any>{
-    return new Promise(function(resolve, reject){
-      MatrixUserManagementService.getAdminAccessToken().then(
-        (adminAccessToken: string) =>{
-
-          const url: string = environment.matrixServerBaseUrl.concat("/_synapse/admin/v1/registration_tokens/new?access_token=", adminAccessToken);
-          MatrixUserManagementService.postData(url, {}).then(
-
-            (createRegistrationTokenRes: any)=>{
-              resolve(createRegistrationTokenRes);
-            },
-            (createRegistrationTokenErr: any)=>{
-              reject("Failed while creating Registration-Token: " + createRegistrationTokenErr);
-            },
-          )
-        },
-        (adminAccessTokenErr: any) =>{
-          reject("Failed while getting Admin-Acces-Token: " + adminAccessTokenErr);
-        }
-      )
-    });
-  }
-
-  public static getRegistrationTokens(): Promise<any>{
-    return new Promise(function(resolve, reject){
-      MatrixUserManagementService.getAdminAccessToken().then(
-        (adminAccessToken: string) =>{
-
-          const url: string = environment.matrixServerBaseUrl.concat("/_synapse/admin/v1/registration_tokens?access_token=", adminAccessToken);
-          MatrixUserManagementService.getData(url).then(
-            (regTokensRes: any) =>{
-              console.log(regTokensRes);
-              resolve(regTokensRes.registration_tokens);
-            },
-            (regTokensErr: string) =>{
-              reject("Error while getting regTokens "+ regTokensErr)
-            },
-          )   
-
-        },
-        (adminAccessTokenErr: any) =>{
-          reject("Failed while getting Admin-Acces-Token: " + adminAccessTokenErr);
-        }
-      )
-    });
-  }
- 
-  public async createNewUserOld(username: string, password: string): Promise<any>{
-    
-    return new Promise(function(resolve, reject){
-      MatrixUserManagementService.getRegistrationTokens().then(
-        (registerTokensRes: any) => {
-
-          const registerAccessToken = registerTokensRes[0];
-          const registrationRequestUrl = environment.matrixServerBaseUrl.concat("/_matrix/client/r0/register");
-          const registrationRequestData = {
-            "auth": {
-              "type": "m.login.registration_token",
-              "token": registerAccessToken,
-              "session": "xxxxx"
-            },
-            "device_id": "ABC",
-            "initial_device_display_name": "Studytalk-Registration",
-            "password": password,
-            "username": username
-          }
-          MatrixUserManagementService.postData(registrationRequestUrl, registrationRequestData).then(
-            (registerRes: any)=>{
-              resolve(registerRes);
-            },
-            (registerErr: string) => {
-              console.log("Error while registering new User " + registerErr);
-            }
-          )
-
-        },
-        (registerTokensErr: string) => {
-          console.log("Error while getting Register Tokens " + registerTokensErr);
-        }
-      )
-    });
-  }
 
   /* Registration */
   public async createNewUser(username: string, password: string, userDisplayName: string): Promise<any>{
@@ -129,7 +46,6 @@ export class MatrixUserManagementService {
         (accessTokens: any) => {
 
           const auth:string = "Bearer ".concat(accessTokens);
-          console.log(auth);
           const registrationRequestData = {
             "displayname": userDisplayName,
             "password": password
@@ -209,10 +125,46 @@ export class MatrixUserManagementService {
     });
   }
 
-  /* Fetch-Helpers */
-  private static getData(url: string): Promise<any>{
+  /* Get Users */
+  public static getUsers(): Promise<string[]>{
+    const usersRequestUrl = environment.matrixServerBaseUrl.concat("/_synapse/admin/v2/users");   
+
     return new Promise(function(resolve, reject){
-      let response = fetch(url);
+      MatrixUserManagementService.getAdminAccessToken().then(
+        (accessTokens: any) => {
+          const auth:string = "Bearer ".concat(accessTokens);
+          MatrixUserManagementService.getData(usersRequestUrl, auth).then(
+            (registerRes: any)=>{
+              const resultList = [];
+              for (let index = 0; index < registerRes.users.length; index++) {
+                const user = registerRes.users[index];
+                resultList.push(user.name);
+              }
+              resolve(resultList);
+            },
+            (registerErr: string) => {
+              console.log("Error while registering new User " + registerErr);
+            }
+          )
+
+        },
+        (registerTokensErr: string) => {
+          console.log("Error while getting Register Tokens " + registerTokensErr);
+        }
+      )
+    });
+  }
+
+  /* Fetch-Helpers */
+  private static getData(url: string, authorization: string): Promise<any>{
+    return new Promise(function(resolve, reject){
+      let response = fetch(url, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": authorization
+        }
+    });
       response.then(
         (fetchRes: any) => {
           fetchRes.json().then(

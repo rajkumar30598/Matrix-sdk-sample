@@ -77,4 +77,10 @@ Trage hier deine Matrix-ID-Benutzerdaten ein<br/>
     <button (click)="onChangePasswordBtClick()">Passwort ändern</button>
     
 </div>
+
+<h1>Bisher registrierte Benutzer</h1>
+<div>
+    <li *ngFor='let matrixId of allRegisteredMatrixIds;'>    
+        {{matrixId}}
+</div>
 <router-outlet></router-outlet>
