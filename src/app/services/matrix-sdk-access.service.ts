@@ -116,7 +116,7 @@ export class MatrixSdkAccessService {
   /* Room Actions */
   
   /**
-   * Returns all Rooms of the Logged in User
+   * Returns all Rooms of the Logged in User. The Rooms are sorted by the dates of the newest events in the room (ascending).
    * @returns {IMessengerRoom[]} a list of MessengerRoom object filled with the values of all roomes of the currently logged in user
    */
   public getAllRoomsOfLoggedInUser(): IMessengerRoom[]{
@@ -128,15 +128,17 @@ export class MatrixSdkAccessService {
         const room = rooms[index];
         const roomName: string = room.name;
         const roomId: string = room.roomId;
+        const lastEventLocalTimestamp: number = room.timeline[room.timeline.length -1].localTimestamp;
         allRooms.push(
-          {roomDisplayName: roomName, roomId: roomId}
+          {roomDisplayName: roomName, roomId: roomId, lastEventLocalTimestamp: lastEventLocalTimestamp}
         )
     }
-    return allRooms;
+    return this.sortRoomsByNewestMessage(allRooms);
   }
 
   /**
-   * Returns all Rooms of the Logged in User, which dont have end-to-end-encryption enabled
+   * Returns all Rooms of the Logged in User, which dont have end-to-end-encryption enabled.
+   * The Rooms are sorted by the dates of the newest events in the room (ascending).
    * @returns {IMessengerRoom[]} a list of MessengerRoom object filled with the values of all unencrypted roomes of the currently logged in user
    */
   public getAllUnencryptedRoomsOfLoggedInUser(): IMessengerRoom[]{
@@ -152,7 +154,8 @@ export class MatrixSdkAccessService {
         unencryptedRooms.push(room);
       }
     }
-    return unencryptedRooms;
+
+    return this.sortRoomsByNewestMessage(unencryptedRooms);
   }
 
   /**
@@ -177,11 +180,11 @@ export class MatrixSdkAccessService {
     return new Promise(function(resolve,reject){
       that.client.createRoom(options).then(
         (createRoomRes: any) => {
-          
           const roomId: string = createRoomRes.room_id;
           const messengerRoom: IMessengerRoom = {
             roomId: roomId,
-            roomDisplayName: that.client.getRoom(roomId).name
+            roomDisplayName: that.client.getRoom(roomId).name,
+            lastEventLocalTimestamp: Date.now()
           };
 
           if (callback) {
@@ -211,6 +214,46 @@ export class MatrixSdkAccessService {
   }
 
   /**
+   * Sorts an array of IMessengerRoom-Objects ascending by the date of their newest events (for example receiving a message).
+   * Using the Mergesort-Algorithm.
+   * The method does not sort on the given array, but returns a sorted array.
+   * @param {Array<IMessengerRoom>} rooms the array of IMessengerRoom-Objects to be sorted
+   * @returns {Array<IMessengerRoom>} the sorted array of IMessengerRoom-Objects
+   */
+  public sortRoomsByNewestMessage(rooms: IMessengerRoom[]): IMessengerRoom[]{
+
+    function merge(left: IMessengerRoom[], right: IMessengerRoom[]): IMessengerRoom[]{
+      let arr: IMessengerRoom[] = []
+      while (left.length && right.length) {
+        const leftHasNewerMessage = left[0].lastEventLocalTimestamp > right[0].lastEventLocalTimestamp
+          if (leftHasNewerMessage) {
+              const shiftedElem: IMessengerRoom|undefined = left.shift();
+              if (shiftedElem) {
+                arr.push(shiftedElem) 
+              }               
+          } else {
+            const shiftedElem: IMessengerRoom|undefined = right.shift();
+            if (shiftedElem) {
+              arr.push(shiftedElem) 
+            }   
+          }
+      }
+      return [ ...arr, ...left, ...right ]
+    }
+
+    function mergeSort(rooms: IMessengerRoom[]):IMessengerRoom[]{
+      const half: number = rooms.length / 2;
+      if(rooms.length < 2){
+        return rooms;
+      }
+      const left: IMessengerRoom[] = rooms.splice(0, half);
+      return merge(mergeSort(left), mergeSort(rooms));
+    }
+
+    return mergeSort(rooms);
+  }
+
+  /**
    * Deletes an room
    * @param {string} roomId id of the room to delete
    * @param {(deletedRoom:IMessengerRoom|null)=>any} callback optional function that will be called after the finished attempt of deleting the room. It has to take one parameter of type MessengerRoom.
@@ -231,7 +274,8 @@ export class MatrixSdkAccessService {
     }
     const forgottenRoom: IMessengerRoom = {
       roomId: roomId,
-      roomDisplayName: room.name
+      roomDisplayName: room.name,
+      lastEventLocalTimestamp: room.lastEventLocalTimestamp
     }
 
     return new Promise(function(resolve, reject){
@@ -274,7 +318,6 @@ export class MatrixSdkAccessService {
 
     const userId: string = this.client.getUserId();
     const displayName: string= this.client.getUser(this.client.getUserId()).displayName;
-    console.log()
     return {
       userDisplayName: displayName,
       userId: userId
@@ -364,7 +407,6 @@ export class MatrixSdkAccessService {
     this.checkForValidClient();
 
     this.client.on("Room.timeline", function(event:any, room:any, toStartOfTimeline:any) {
-      console.log("EVENT OCCURED" + event);
       if (event.getType() == "m.room.message" && event.getContent().body != "") {
 
           const sender: any = room.getMember(event.getSender());
@@ -378,12 +420,13 @@ export class MatrixSdkAccessService {
           const messageText: string = event.getContent().body;
           const roomName: string = room.name;
           const roomId: string = event.getRoomId();
+          const lastEventLocalTimestamp: number = event.localTimestamp;
 
           const date: Date = new Date(event.localTimestamp);
 
           const message: IMessengerMessage = {
             sender: {userDisplayName: senderName, userId: senderId},
-            room: {roomDisplayName: roomName, roomId: roomId},
+            room: {roomDisplayName: roomName, roomId: roomId, lastEventLocalTimestamp: lastEventLocalTimestamp},
             content: messageText, date: date
           }
           onMessageArrived(message);
@@ -405,12 +448,29 @@ export class MatrixSdkAccessService {
     this.client.on("RoomMember.membership", function(event: any, member: any) {
       if (member.membership === "join" && member.userId === myUserId) {
         const roomId = member.roomId;
-        const roomName = that.client.getRoom(roomId).name;
+        
         const room: IMessengerRoom = {
-          roomDisplayName: roomName,
-          roomId: roomId
+          roomDisplayName: "",
+          roomId: roomId,
+          lastEventLocalTimestamp: event.localTimestamp,
         };
-        onRoomJoined(room);
+
+        const roomFromClient = that.client.getRoom(roomId); 
+        if (roomFromClient) {
+          room.roomDisplayName = roomFromClient.name;
+          onRoomJoined(room);
+
+        }else{
+          //The room was just created and can not be acessed via that.client.getRoom() yet
+          //Must wait until the room name of the room is synchronized with client. Then we can trigger the onRoomJoined-Method
+          that.client.on("Room.timeline", function(event:any, room:any, toStartOfTimeline:any) {
+            if (event.getType() == "m.room.name" && event.getContent().body != "") {
+                room.roomDisplayName =  event.getContent().name;
+                onRoomJoined(room);
+              }
+          });
+        }
+        
       }
     });
   }
@@ -458,7 +518,7 @@ export class MatrixSdkAccessService {
 
           const message: IMessengerMessage = {
             sender: {userId: senderId, userDisplayName: senderName},
-            room: {roomId: roomId, roomDisplayName: roomName},
+            room: {roomId: roomId, roomDisplayName: roomName, lastEventLocalTimestamp: event.localTimestamp},
             content: content, date: date
           }
           allMessages.push(message);
@@ -493,7 +553,11 @@ export class MatrixSdkAccessService {
         if (room) {
           directChats.push({
             user: {userId: userId, userDisplayName: room.getMember(userId).name},
-            room: {roomDisplayName:room.name, roomId: roomId}
+            room: {
+              roomDisplayName:room.name,
+              roomId: roomId,
+              lastEventLocalTimestamp: room.timeline[room.timeline.length -1].localTimestamp
+            }
           });
         }
       });
@@ -562,7 +626,9 @@ export class MatrixSdkAccessService {
               const directChat: IMessengerDirectChat = {
                 room:{
                   roomId: roomId,
-                  roomDisplayName: room.name},
+                  roomDisplayName: room.name,
+                  lastEventLocalTimestamp: room.timeline[room.timeline.length -1].localTimestamp
+                },
                 user:{
                   userId: userId,
                   userDisplayName: room.getMember(userId).name
