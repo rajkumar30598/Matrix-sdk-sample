@@ -47,12 +47,15 @@ export class MatrixSdkAccessService {
               return synchronize().then(
                 (syncRes: any)=>{
                   if (syncRes.state == "PREPARED") {
-                    activateAutoJoin();
-                    const yourUser: IMessengerUser = getLoggedInUser();
-                    if (callback) {
-                      callback(yourUser);
-                    }
-                    resolve(yourUser);
+                    client.getProfileInfo(client.getUserId()).then((info: any) => {
+                      client.getUser(client.getUserId()).displayName = info.displayname;
+                      activateAutoJoin();
+                      const yourUser: IMessengerUser = getLoggedInUser();
+                      if (callback) {
+                        callback(yourUser);
+                      }
+                      resolve(yourUser);
+                    });                    
                   }else{
                     if (callback) {
                       callback(null);
