@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { environment } from 'src/environments/environment';
+import { IMessengerUser } from '../messenger-interfaces/messenger-user';
 
 @Injectable({
   providedIn: 'root'
@@ -144,6 +145,34 @@ export class MatrixUserManagementService {
             },
             (registerErr: string) => {
               console.log("Error while registering new User " + registerErr);
+            }
+          )
+
+        },
+        (registerTokensErr: string) => {
+          console.log("Error while getting Register Tokens " + registerTokensErr);
+        }
+      )
+    });
+  }
+
+  public static getUser(userId: string): Promise<IMessengerUser>{
+    const usersRequestUrl = environment.matrixServerBaseUrl.concat("/_synapse/admin/v2/users/", userId);   
+
+    return new Promise(function(resolve, reject){
+      MatrixUserManagementService.getAdminAccessToken().then(
+        (accessTokens: any) => {
+          const auth:string = "Bearer ".concat(accessTokens);
+          MatrixUserManagementService.getData(usersRequestUrl, auth).then(
+            (registerRes: any)=>{
+              const user: IMessengerUser ={
+                userDisplayName: registerRes.displayname,
+                userId: registerRes.name
+              };        
+              resolve(user);
+            },
+            (registerErr: string) => {
+              console.error("Error while registering new User " + registerErr);
             }
           )
 

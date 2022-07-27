@@ -46,8 +46,8 @@ export class AppComponent implements OnInit {
 
   ngOnInit(): void {
     MatrixUserManagementService.getUsers().then(
-      (res)=>{
-        this.allRegisteredMatrixIds = res;
+      (usersRes)=>{
+        this.allRegisteredMatrixIds = usersRes;
       }
     )
   }
