@@ -12,7 +12,7 @@ export const environment = {
       username: "",
       password: ""
   },
-  matrixServerBaseUrl: "https://studytalk.inform.hs-hannover.de",
+  matrixServerBaseUrl: "http://15.207.108.32",
 };
 
 /*
