@@ -1,30 +1,69 @@
-# MatrixJsSdkTest
+# Matrix SDK Sample (Angular)
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 12.0.3.
+A test harness that shows how to use [`matrix-js-sdk`](https://github.com/matrix-org/matrix-js-sdk) from an Angular app, together with the Synapse Admin API, against a Matrix homeserver.
 
-## Development server
+> The UI is a bare, German-language test page — this is a developer sample, not a finished chat client.
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
+## Features
 
-## Code scaffolding
+**Client (matrix-js-sdk)** — `src/app/services/matrix-sdk-access.service.ts`
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+- Log in with username and password and start/sync the client
+- List the user's rooms and the messages in a selected room
+- Send text messages to a room (unencrypted rooms only)
+- Create and delete (leave) rooms; invite a contact to a room
+- Auto-join rooms when invited
+- List contacts (members of the user's rooms) and direct chats; send direct messages
+- Listeners for incoming messages and joined rooms
 
-## Build
+**User administration (Synapse Admin API)** — `src/app/services/matrix-user-management.service.ts`
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
+- List registered users
+- Register new users
+- Reset a user's password
+- Deactivate (delete) users
 
-## Running unit tests
+These calls obtain an access token for an admin account configured in the environment file.
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+## Tech stack
 
-## Running end-to-end tests
+- Angular 12.0, Forms (`ngModel`)
+- matrix-js-sdk 17 (browser bundle loaded via `angular.json` scripts)
+- TypeScript 4.2, RxJS 6.6
+- Matrix homeserver running Synapse (for the admin endpoints)
 
-Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.
+## Getting started
 
-## Further help
+Requires Node.js 12.14+ / 14 and npm.
 
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
+```bash
+npm install
+cp src/environments/environment.dev.dist.ts src/environments/environment.dev.ts
+```
 
-<!-- userName : vigneshrajan -->
-<!-- pass : 12345 -->
+Edit `src/environments/environment.dev.ts` (git-ignored) and set:
+
+| Key | Purpose |
+| --- | --- |
+| `matrixServerBaseUrl` | Base URL of your Matrix / Synapse homeserver |
+| `adminMatrixAccount` | Username and password of a Synapse admin, used for the user-management features |
+| `personalMatrixAccount` | Optional test account credentials |
+
+Then run:
+
+```bash
+npm start        # ng serve (development config) -> http://localhost:4200
+```
+
+For production builds, `src/environments/environment.prod.ts` is used (`npm run build`).
+
+## Project structure
+
+```
+src/app/
+├── component/                   # test page (login, rooms, messages, contacts, DMs, admin actions)
+├── messenger-interfaces/        # IMessengerUser, IMessengerRoom, IMessengerMessage, IMessengerDirectChat
+└── services/
+    ├── matrix-sdk-access.service.ts         # wrapper around matrix-js-sdk
+    └── matrix-user-management.service.ts    # Synapse Admin API calls
+```
